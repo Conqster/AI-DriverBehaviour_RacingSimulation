@@ -28,6 +28,14 @@ public class DriverData
     [SerializeField] public bool start = false;
     [SerializeField] public bool goBerserk = false;
 
+    [Header("Debugger")]
+    [SerializeField] public float targetAngle;
+    [SerializeField] public float currentIntensity;
+    [SerializeField] public float rotRatio;
+    [SerializeField] public float currentDirection;
+    [SerializeField] public float currentSteer;
+    [SerializeField] public float normalSteerIntensity;
+
 
     public DriverData(CarEngine engine, Circuit circuit, Rigidbody rb, ObstacleAvoidance obstacleAvoidance, GameObject brakeLight)
     {

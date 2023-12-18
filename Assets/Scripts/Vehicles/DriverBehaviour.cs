@@ -30,6 +30,7 @@ public class DriverBehaviour : MonoBehaviour
 
 
     private Vector3 target;
+    [Space]
     public float currentSteer;
     private float steer = 0.0f;
 
@@ -53,6 +54,7 @@ public class DriverBehaviour : MonoBehaviour
         //OldScript();
         driverSM = driverSM.Process();
         driverSMData = driverSM.GetStateMachineData();
+        //Time.timeScale = 0.5f;
     }
 
 

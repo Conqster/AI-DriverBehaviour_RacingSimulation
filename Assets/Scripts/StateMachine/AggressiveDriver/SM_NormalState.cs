@@ -12,6 +12,9 @@ public class SM_NormalState : StateMachine
 
     private float steer;
 
+    private float lastObtacleTime = Mathf.Infinity;
+    private float normalSteerIntensity = 0.01f;
+
     public SM_NormalState(DriverData driver) : base(driver)
     {
         sm_name = "Normal State";
@@ -41,19 +44,32 @@ public class SM_NormalState : StateMachine
         float distanceToTarget = Vector3.Distance(waypointTarget, sm_driver.rb.transform.position);
         float targetAngle = Mathf.Atan2(localTarget.x, localTarget.z) * Mathf.Rad2Deg;
 
+        sm_driver.targetAngle = targetAngle;
 
         //constant acceleration
         float accelerate = 1f;
         float brake = 0.0f;
 
+        
+
         //obstacleAhead = obstacleAvoidance.DangerAhead(visionLength, visionAngle);
         //Should ignore steering towards target if obstacle ahead
-        if (!sm_driver.obstacleAvoidance.DangerAhead(visionLength, visionAngle))
+        if (sm_driver.obstacleAvoidance.DangerAhead(visionLength, visionAngle))
+        {
+            lastObtacleTime = 0.0f;
+        }
+        else
         {
             //steer based on the difference to target angle and use sensitivity.
-            steer = Mathf.Clamp(targetAngle * steeringSensitivity, -1, 1) * Mathf.Sign(sm_driver.rb.velocity.magnitude);
+            //steer = Mathf.Clamp(targetAngle * steeringSensitivity, -1, 1) * Mathf.Sign(sm_driver.rb.velocity.magnitude);    //problem sets the angle directly, so it creates a snapping pos rotation
+
+            AvoidedObstacle(ref normalSteerIntensity, steeringSensitivity);
+            //SteerToTarget(targetAngle, normalSteerIntensity * 10f, ref steer);
+            steer = Mathf.Clamp(targetAngle * normalSteerIntensity, -1, 1) * Mathf.Sign(sm_driver.rb.velocity.magnitude);    //problem sets the angle directly, so it creates a snapping pos rotation
             //float steer = 0.0f;
         }
+
+        sm_driver.normalSteerIntensity = normalSteerIntensity;
 
         sm_driver.obstacleAvoidance.Perception(visionLength, visionAngle, steeringSensitivity * 100f, ref steer);
         //print("steer value: " + steer);
@@ -87,6 +103,7 @@ public class SM_NormalState : StateMachine
             sm_driver.brakeLight.SetActive(false);
         }
 
+        sm_driver.currentSteer = steer;
 
         if (distanceToTarget < 15.0f)
         {
@@ -95,6 +112,7 @@ public class SM_NormalState : StateMachine
                 currentWaypointIndex = 0;
 
             waypointTarget = sm_driver.circuit.waypoints[currentWaypointIndex].position;
+            sm_driver.currentWaypointIndex = currentWaypointIndex; //debug info
         }
         base.Update();
     }
@@ -104,6 +122,42 @@ public class SM_NormalState : StateMachine
         //TEST TEST
         sm_driver.goBerserk = false; 
         base.Exit();
+    }
+
+
+    private void SteerToTarget(float targetAngle, float rotIntensity, ref float steerDirRatio)
+    {
+        //get the angle to target 
+        //get rotation direction to target
+        //the further the intensity 
+        //the closer, less intensity
+        float maxRotationAt = 60.0f;// make global to current state later 
+        float minRotationAt = 30.0f;
+
+        //lerp rotation intensity based on max and min RotationAt
+        float rotationRatio = Mathf.InverseLerp(minRotationAt, maxRotationAt, Mathf.Abs(targetAngle));
+        //float currentIntensity = rotIntensity * rotationRatio;
+        float currentIntensity = Mathf.Lerp(rotIntensity * 0.1f, rotIntensity, rotationRatio);
+
+        //steer direction
+        float steerDir = Mathf.Sign(sm_driver.rb.velocity.magnitude);
+
+        //increase steer based on intensity and direction
+        steerDirRatio += (currentIntensity * steerDir);
+        sm_driver.currentDirection = steerDir;
+        sm_driver.currentIntensity = currentIntensity;
+        sm_driver.rotRatio = rotationRatio;
+
+        //keep steer in the range -1 and 1
+        steerDirRatio = Mathf.Clamp(steerDirRatio, -1.0f, 1.0f);
+    }
+
+    private void AvoidedObstacle(ref float normalSteerIntensity, float steerIntensity)
+    {
+        lastObtacleTime += Time.deltaTime;        // increases overtime last obstacle avioded 
+        float minIntensity = steeringSensitivity * 0.2f;
+
+        normalSteerIntensity = Mathf.Lerp(minIntensity, steerIntensity, lastObtacleTime);
     }
 
 }
