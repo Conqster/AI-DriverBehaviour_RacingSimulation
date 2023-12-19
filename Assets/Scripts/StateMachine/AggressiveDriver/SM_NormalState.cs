@@ -15,6 +15,8 @@ public class SM_NormalState : StateMachine
     private float lastObtacleTime = Mathf.Infinity;
     private float normalSteerIntensity = 0.01f;
 
+    private bool wantToOverTake = false;    
+
     public SM_NormalState(DriverData driver) : base(driver)
     {
         sm_name = "Normal State";
@@ -39,6 +41,25 @@ public class SM_NormalState : StateMachine
         {
             TriggerExit(new SM_AggressiveState(sm_driver));
         }
+
+        if (sm_driver.testState)
+        {
+            TriggerExit(new SM_TestState(sm_driver));
+        }
+
+
+        ///Overtaking condition
+        ///if there is a car infront 
+        ///there is a potential to overtake 
+        ///If there is opening for overtaking factors 
+        if(PotentialToOvertake())
+        {
+            TriggerExit(new SM_OvertakingState(sm_driver, new OvertakingInfo()));
+
+            //wantToOverTake = true;
+            //sm_event = SM_Event.Exit;
+        }
+
 
         Vector3 localTarget = sm_driver.rb.transform.InverseTransformPoint(waypointTarget);
         float distanceToTarget = Vector3.Distance(waypointTarget, sm_driver.rb.transform.position);
@@ -121,6 +142,22 @@ public class SM_NormalState : StateMachine
     {
         //TEST TEST
         sm_driver.goBerserk = false; 
+
+        if(wantToOverTake)
+        {
+            if(TryOvertaking(out OvertakingInfo info))
+            {
+                TriggerExit(new SM_OvertakingState(sm_driver, info));   
+            }
+            else
+            {
+                //TriggerExit(new SM_AggressiveState(sm_driver));
+                TriggerExit(new SM_NormalState(sm_driver));
+            }
+            wantToOverTake = false;
+        }
+
+
         base.Exit();
     }
 
@@ -158,6 +195,46 @@ public class SM_NormalState : StateMachine
         float minIntensity = steeringSensitivity * 0.2f;
 
         normalSteerIntensity = Mathf.Lerp(minIntensity, steerIntensity, lastObtacleTime);
+    }
+
+
+    private bool PotentialToOvertake()
+    {
+        ///current speed against opponent speed 
+        ///distance to opponent
+        return false;
+    }
+
+
+    /// <summary>
+    /// Try to get set/ready for overtake
+    /// returns true/false if achievable
+    /// </summary>
+    /// <param name="info"></param>
+    /// <returns></returns>
+    private bool TryOvertaking(out OvertakingInfo info)
+    {
+        info = new OvertakingInfo();
+
+        //raycast etc get opponent Transform
+        RaycastHit hit = new RaycastHit();
+        info.opponentTransform = hit.transform;
+        info.numberOfCars = 1;
+        info.initialSpeed = sm_driver.rb.velocity.magnitude;
+        info.opponentInitialPos = info.opponentTransform.position;
+
+        //based on calculation initialSpeed opponentSPeed
+        info.requiredSpeed = 12946.0f;
+
+        if (hit.transform.tag != "A car" && hit.transform.tag == "Track wall")
+            info.distanceToNextCorner = hit.distance;
+
+        //if some condition are meet like 
+        if(info.distanceToNextCorner > 50 && info.initialSpeed < sm_driver.engine.TopSpeed)   //TO-DO: TOP SPEED IS YET TO BE IMPLEMENTED
+            return true;
+
+
+        return false;
     }
 
 }

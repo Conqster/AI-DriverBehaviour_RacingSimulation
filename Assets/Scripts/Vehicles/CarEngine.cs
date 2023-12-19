@@ -34,6 +34,12 @@ namespace Car
         public float currentVelocity;
 
         private Rigidbody rb;
+        private float topSpeed;
+
+        public float TopSpeed
+        {
+            get { return topSpeed; }
+        }
         private float steerAngle;
         private float currentMotorTorque;
 

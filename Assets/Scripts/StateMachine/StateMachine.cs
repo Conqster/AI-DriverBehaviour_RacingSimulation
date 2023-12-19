@@ -27,6 +27,7 @@ public class DriverData
     [Header("External Information")]
     [SerializeField] public bool start = false;
     [SerializeField] public bool goBerserk = false;
+    [SerializeField] public bool testState = false;
 
     [Header("Debugger")]
     [SerializeField] public float targetAngle;
@@ -138,6 +139,16 @@ public class StateMachine
     {
         sm_duration += Time.deltaTime;
 
+        //if(sm_driver.testState)
+        //{
+        //    StateMachine testState = new SM_TestState(sm_driver);
+
+        //    Debug.Log(testState.GetSM_Name());
+
+        //    if (GetStateMachine() != testState)
+        //        TriggerExit(testState);
+        //}
+
     
         if (sm_transitionTriggered)
             return;
@@ -169,6 +180,8 @@ public class StateMachine
     public SM_Event GetSM_Event() { return sm_event; }
 
     public StateMachineData GetStateMachineData() { return sm_stateData; }
+
+    private StateMachine GetStateMachine() { return this; }
     
 }
 
