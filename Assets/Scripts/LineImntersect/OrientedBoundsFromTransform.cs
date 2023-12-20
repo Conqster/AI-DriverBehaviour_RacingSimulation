@@ -9,8 +9,8 @@ public class OrientedBoundsFromTransform : MonoBehaviour
         Bounds orientedBounds = CalculateOrientedBoundsFromTransform(transform);
 
         // Use orientedBounds for further operations or checks
-        Debug.Log("Center: " + orientedBounds.center);
-        Debug.Log("Size: " + orientedBounds.size);
+        //Debug.Log("Center: " + orientedBounds.center);
+        //Debug.Log("Size: " + orientedBounds.size);
     }
 
     Bounds CalculateOrientedBoundsFromTransform(Transform targetTransform)

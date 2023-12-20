@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public static class CustomMath
@@ -31,5 +32,23 @@ public static class CustomMath
         }
 
         return false;
+    }
+
+    public static void DebugObject(PrimitiveType primitive, Vector3 position, Material mat)
+    {
+        GameObject debuggerObj = GameObject.CreatePrimitive(primitive);
+
+        debuggerObj.name = "debuggerObj: " + position;
+        debuggerObj.transform.position = position;
+
+        if (mat != null)
+        {
+            debuggerObj.GetComponent<Renderer>().material = mat;
+        }
+
+        if(debuggerObj.TryGetComponent<Collider>(out Collider col))
+        {
+            Object.Destroy(col);
+        }
     }
 }

@@ -19,6 +19,7 @@ public class DriverData
     [SerializeField] private float maxBreak = 897f;
 
     public Transform transform;
+    public Material mat;
 
     [SerializeField, Range(0.0f, 1.0f)] public float steeringSensitivity = 0.01f;
     [SerializeField, Range(0.0f, 20.0f)] public float visionLength = 9.0f;
@@ -28,6 +29,8 @@ public class DriverData
     [SerializeField] public bool start = false;
     [SerializeField] public bool goBerserk = false;
     [SerializeField] public bool testState = false;
+    [SerializeField, Range(0.0f, 5.0f)] public float raycastUpOffset = 1.0f;
+    [SerializeField, Range(0.0f, 15.0f)] public float rayLength = 15.0f;
 
     [Header("Debugger")]
     [SerializeField] public float targetAngle;
@@ -38,13 +41,15 @@ public class DriverData
     [SerializeField] public float normalSteerIntensity;
 
 
-    public DriverData(CarEngine engine, Circuit circuit, Rigidbody rb, ObstacleAvoidance obstacleAvoidance, GameObject brakeLight)
+    public DriverData(CarEngine engine, Circuit circuit, Rigidbody rb, ObstacleAvoidance obstacleAvoidance, GameObject brakeLight, Transform transform, Material mat)
     {
         this.engine = engine;
         this.circuit = circuit;
         this.rb = rb;
         this.obstacleAvoidance = obstacleAvoidance;
         this.brakeLight = brakeLight;
+        this.transform = transform;
+        this.mat = mat;
     }
 }
 
@@ -74,6 +79,7 @@ public class StateMachine
     
 
 
+
     private StateMachineData sm_stateData;
     protected StateMachine sm_transitTo;  //next state
     protected bool sm_transitionTriggered = false;  //triggered for transition
@@ -83,7 +89,6 @@ public class StateMachine
     
     protected DriverData sm_driver;
     
-    protected int currentWaypointIndex = 0;
     
     //protected float 
     

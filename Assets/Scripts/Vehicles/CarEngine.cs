@@ -22,7 +22,7 @@ namespace Car
         [SerializeField] private WheelCollider[] wheelCollider = new WheelCollider[4];
         [SerializeField] private GameObject[] wheelMesh = new GameObject[4];
         [SerializeField, Range(0.0f, 10000.0f)] private float fullTorqueAcrossAllWheel = 2000.0f;
-        [SerializeField, Range(50.0f, 1000.0f)] private float downForce = 100.0f;
+        [SerializeField, Range(10.0f, 200.0f)] private float downForce = 100.0f;
         [SerializeField, Range(0.0f, 1.0f)] private float tractionControl = 0.5f;
         [SerializeField, Range(5.0f, 90.0f)] private float maxSteerAngle = 25.0f;
         [SerializeField, Range(50.0f, 2000.0f)] private float reverseTorque = 150.0f;
@@ -31,7 +31,8 @@ namespace Car
         public float driveNow;
         public float testBrake = 0.0f;
         public float currentLtFrontBrake = 0.0f;
-        public float currentVelocity;
+        public float currentSpeed;
+        public float maxSpeedAttained = 0.0f;
 
         private Rigidbody rb;
         private float topSpeed;
@@ -56,7 +57,12 @@ namespace Car
         {
             currentLtFrontBrake = wheelCollider[0].brakeTorque;
 
-            currentVelocity = rb.velocity.magnitude;
+            currentSpeed = rb.velocity.magnitude;
+
+            if (currentSpeed > maxSpeedAttained)
+            {
+                maxSpeedAttained = currentSpeed;
+            }
 
             float v = Input.GetAxis("Vertical");
             float h = Input.GetAxis("Horizontal");

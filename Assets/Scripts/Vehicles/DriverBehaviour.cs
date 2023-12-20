@@ -27,6 +27,7 @@ public class DriverBehaviour : MonoBehaviour
     [SerializeField, Range(0.0f, 90.0f)] private float visionAngle = 25.0f;
 
     public DriverData driverData;
+    public Material mat;
 
 
     private Vector3 target;
@@ -45,7 +46,7 @@ public class DriverBehaviour : MonoBehaviour
         circuit = GameObject.FindGameObjectWithTag("Circuit").GetComponent<Circuit>();
         target = circuit.waypoints[currentWaypointIndex].position;
         rb = GetComponent<Rigidbody>();
-        driverData = new DriverData(engine, circuit, rb, obstacleAvoidance, brakeLight);
+        driverData = new DriverData(engine, circuit, rb, obstacleAvoidance, brakeLight, transform, mat);
         driverSM = new SM_DefaultState(driverData);
     }
 

@@ -22,7 +22,7 @@ public class SM_AggressiveState : StateMachine
 
     protected override void Enter()
     {
-        waypointTarget = sm_driver.circuit.waypoints[currentWaypointIndex].position;
+        waypointTarget = sm_driver.circuit.waypoints[sm_driver.currentWaypointIndex].position;
 
         sm_driver.steeringSensitivity = steeringSensitivity;
         sm_driver.visionLength = visionLength;
@@ -91,11 +91,11 @@ public class SM_AggressiveState : StateMachine
 
         if (distanceToTarget < 15.0f)
         {
-            currentWaypointIndex++;
-            if (currentWaypointIndex >= sm_driver.circuit.waypoints.Count)
-                currentWaypointIndex = 0;
+            sm_driver.currentWaypointIndex++;
+            if (sm_driver.currentWaypointIndex >= sm_driver.circuit.waypoints.Count)
+                sm_driver.currentWaypointIndex = 0;
 
-            waypointTarget = sm_driver.circuit.waypoints[currentWaypointIndex].position;
+            waypointTarget = sm_driver.circuit.waypoints[sm_driver.currentWaypointIndex].position;
         }
         base.Update();
     }
