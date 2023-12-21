@@ -20,6 +20,8 @@ public class DriverData
 
     public Transform transform;
     public Material mat;
+    public bool canUseBlock;
+    public float blockingCooldown = 0.0f;
 
     [SerializeField, Range(0.0f, 1.0f)] public float steeringSensitivity = 0.01f;
     [SerializeField, Range(0.0f, 20.0f)] public float visionLength = 9.0f;
@@ -31,6 +33,7 @@ public class DriverData
     [SerializeField] public bool testState = false;
     [SerializeField, Range(0.0f, 5.0f)] public float raycastUpOffset = 1.0f;
     [SerializeField, Range(0.0f, 15.0f)] public float rayLength = 15.0f;
+    public Transform currentTargetInfo;
 
     [Header("Debugger")]
     [SerializeField] public float targetAngle;
@@ -41,7 +44,7 @@ public class DriverData
     [SerializeField] public float normalSteerIntensity;
 
 
-    public DriverData(CarEngine engine, Circuit circuit, Rigidbody rb, ObstacleAvoidance obstacleAvoidance, GameObject brakeLight, Transform transform, Material mat)
+    public DriverData(CarEngine engine, Circuit circuit, Rigidbody rb, ObstacleAvoidance obstacleAvoidance, GameObject brakeLight, Transform transform)
     {
         this.engine = engine;
         this.circuit = circuit;
@@ -49,7 +52,6 @@ public class DriverData
         this.obstacleAvoidance = obstacleAvoidance;
         this.brakeLight = brakeLight;
         this.transform = transform;
-        this.mat = mat;
     }
 }
 
@@ -63,7 +65,20 @@ public struct StateMachineData
 
 
 
+public class Ghost
+{
+    public GameObject obj;
 
+    public Ghost(GameObject obj)
+    {
+        this.obj = obj;
+    }
+
+    public void Destroy()
+    {
+        Object.Destroy(obj);
+    }
+}
 
 
 public class StateMachine
@@ -143,6 +158,7 @@ public class StateMachine
     protected virtual void Update()
     {
         sm_duration += Time.deltaTime;
+        sm_driver.blockingCooldown -= Time.deltaTime;   
 
         //if(sm_driver.testState)
         //{

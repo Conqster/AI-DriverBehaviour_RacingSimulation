@@ -750,6 +750,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 2100000, guid: f68c683b9da48e045ad973a62e4eb1e9, type: 2}
     - target: {fileID: 8096019259971846000, guid: 4bc65e540038bc24c8eef7add14c36ff, type: 3}
+      propertyPath: canBlock
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8096019259971846000, guid: 4bc65e540038bc24c8eef7add14c36ff, type: 3}
       propertyPath: maxBreak
       value: 897
       objectReference: {fileID: 0}
@@ -764,6 +768,10 @@ PrefabInstance:
     - target: {fileID: 8096019259971846000, guid: 4bc65e540038bc24c8eef7add14c36ff, type: 3}
       propertyPath: visionLength
       value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: 8096019259971846000, guid: 4bc65e540038bc24c8eef7add14c36ff, type: 3}
+      propertyPath: driverData.canUseBlock
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8096019259971846000, guid: 4bc65e540038bc24c8eef7add14c36ff, type: 3}
       propertyPath: driverData.visionAngle
@@ -796,31 +804,31 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 916745343908018816, guid: 4bc65e540038bc24c8eef7add14c36ff, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -1.5521164
+      value: -1.6711655
       objectReference: {fileID: 0}
     - target: {fileID: 916745343908018816, guid: 4bc65e540038bc24c8eef7add14c36ff, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.82538414
+      value: 3.2704048
       objectReference: {fileID: 0}
     - target: {fileID: 916745343908018816, guid: 4bc65e540038bc24c8eef7add14c36ff, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -1.1551056
+      value: -5.66098
       objectReference: {fileID: 0}
     - target: {fileID: 916745343908018816, guid: 4bc65e540038bc24c8eef7add14c36ff, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.96441084
+      value: 0.9782654
       objectReference: {fileID: 0}
     - target: {fileID: 916745343908018816, guid: 4bc65e540038bc24c8eef7add14c36ff, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0.112764135
+      value: 0.17892212
       objectReference: {fileID: 0}
     - target: {fileID: 916745343908018816, guid: 4bc65e540038bc24c8eef7add14c36ff, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.23753801
+      value: 0.103092335
       objectReference: {fileID: 0}
     - target: {fileID: 916745343908018816, guid: 4bc65e540038bc24c8eef7add14c36ff, type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0.027778625
+      value: -0.018860506
       objectReference: {fileID: 0}
     - target: {fileID: 916745343908018816, guid: 4bc65e540038bc24c8eef7add14c36ff, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -906,6 +914,10 @@ PrefabInstance:
       propertyPath: mat
       value: 
       objectReference: {fileID: 2100000, guid: f68c683b9da48e045ad973a62e4eb1e9, type: 2}
+    - target: {fileID: 8096019259971846000, guid: 4bc65e540038bc24c8eef7add14c36ff, type: 3}
+      propertyPath: canBlock
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8096019259971846000, guid: 4bc65e540038bc24c8eef7add14c36ff, type: 3}
       propertyPath: maxBreak
       value: 897

@@ -10,9 +10,10 @@ public struct OvertakingInfo
 {
     public Transform opponentTransform;
     public Rigidbody opponentRb;
-    public Transform overtakeGhost;
-    public Transform potentialGoal;
-    public Transform initialGoal;
+    public Ghost overtakeGhost;
+    public Ghost potentialGoal;
+    public Ghost initialGoal;
+    public Vector3 initialWaypoint; //keeps track of waypoint
     //public float distanceToNextCorner;
     //public int numberOfCars;
     //public float initialSpeed;
@@ -38,6 +39,9 @@ public class SM_OvertakingState : StateMachine
     private float visionAngle = 25.0f;
 
     private Vector3 currentGoalTarget;
+
+    //Make is state machine global later to decision which car should be cautions 
+    private bool beCaution = true;
 
     public SM_OvertakingState(DriverData driver, OvertakingInfo overtakingInfo) : base(driver)
     {
@@ -75,10 +79,15 @@ public class SM_OvertakingState : StateMachine
 
     protected override void Update()
     {
+        
+
         if(OvertakingAchieved())
         {
             TriggerExit(new SM_NormalState(sm_driver));
         }
+
+
+  
 
 
         if(UpdateGoal(ref currentGoalTarget))
@@ -108,13 +117,41 @@ public class SM_OvertakingState : StateMachine
         }
 
 
+        //NEED TO CHANGE JUST PLACED HERE, FOR UPDATE
+        float distanceToWaypoint = Vector3.Distance(overtakingData.initialWaypoint, sm_driver.rb.transform.position);
+        if (distanceToWaypoint < 15.0f)
+        {
+            sm_driver.currentWaypointIndex++;
+            if (sm_driver.currentWaypointIndex >= sm_driver.circuit.waypoints.Count)
+                sm_driver.currentWaypointIndex = 0;
 
+            overtakingData.initialWaypoint = sm_driver.circuit.waypoints[sm_driver.currentWaypointIndex].position;
+            //sm_driver.currentWaypointIndex = sm_driver.currentWaypointIndex; //debug info
+        }
 
         base.Update();
     }
 
     protected override void Exit()
     {
+
+    //        public Ghost overtakeGhost;
+    //public Ghost potentialGoal;
+    //public Ghost initialGoal;
+        
+        //if(overtakingData.overtakeGhost != null)
+        //{
+        //    overtakingData.overtakeGhost.Destroy();
+        //}
+        //if(overtakingData.potentialGoal != null)
+        //{
+        //    overtakingData.potentialGoal.Destroy();
+        //}
+        //if(overtakingData.initialGoal != null)
+        //{
+        //    overtakingData.initialGoal.Destroy();
+        //}
+
         base.Exit();
     }
 
@@ -125,35 +162,47 @@ public class SM_OvertakingState : StateMachine
     {
         Vector3 forward = sm_driver.transform.TransformDirection(sm_driver.transform.forward);
 
-        if (overtakingData.initialGoal)
+        if (overtakingData.initialGoal.obj)
         {
-            Vector3 toOther = overtakingData.initialGoal.position - sm_driver.transform.position;
+            Vector3 toOther = overtakingData.initialGoal.obj.transform.position - sm_driver.transform.position;
             if (Vector3.Dot(forward, toOther) > 0)
             {
-                goal = overtakingData.initialGoal.position;
+                goal = overtakingData.initialGoal.obj.transform.position;
+
+                //FOR DEBUGGING PURPOSES
+                sm_driver.currentTargetInfo = overtakingData.initialGoal.obj.transform;
                 return true;
             }
         }
 
-        if (overtakingData.potentialGoal)
+        if (overtakingData.potentialGoal.obj)
         {
-            Vector3 toOther = overtakingData.potentialGoal.position - sm_driver.transform.position;
+            Vector3 toOther = overtakingData.potentialGoal.obj.transform.position - sm_driver.transform.position;
             if (Vector3.Dot(forward, toOther) > 0)
             {
-                goal = overtakingData.potentialGoal.position;
+                goal = overtakingData.potentialGoal.obj.transform.position;
+
+                //FOR DEBUGGING PURPOSES
+                sm_driver.currentTargetInfo = overtakingData.potentialGoal.obj.transform;
                 return true;
             }
         }
 
-        if (overtakingData.overtakeGhost)
+        if (overtakingData.overtakeGhost.obj)
         {
-            Vector3 toOther = overtakingData.overtakeGhost.position - sm_driver.transform.position;
+            Vector3 toOther = overtakingData.overtakeGhost.obj.transform.position - sm_driver.transform.position;
             if (Vector3.Dot(forward, toOther) > 0)
             {
-                goal = overtakingData.overtakeGhost.position;
+                goal = overtakingData.overtakeGhost.obj.transform.position;
+
+
+                //FOR DEBUGGING PURPOSES
+                sm_driver.currentTargetInfo = overtakingData.overtakeGhost.obj.transform;
                 return true;
             }
         }
+
+ 
 
         return false;
     }
@@ -197,9 +246,49 @@ public class SM_OvertakingState : StateMachine
     }
 
 
+    private void BeCaution(ref float brake, ref float acc)
+    {
+
+        RaycastHit hit;
+        Vector3 origin = sm_driver.transform.position +
+                 new Vector3(0.0f, sm_driver.raycastUpOffset, 0.0f);
+        float tooClose = sm_driver.rayLength * (3.0f / 4.0f);
+        bool opponentValid = false;
+
+        if (Physics.Raycast(origin, sm_driver.transform.forward, out hit, sm_driver.rayLength * 2.0f))
+        {
+            if (hit.distance < tooClose && hit.transform.CompareTag("Vehicle"))
+            {
+                float minAcc = 0.5f;
+                float maxAcc = 0.9f;
+                //determine how close is it to half tooclose
+                float closeness = Mathf.InverseLerp(tooClose * 0.5f, tooClose, hit.distance);
+                acc = Mathf.Lerp(minAcc, maxAcc, closeness);
+                //Debug.Log("Acc: " + acc);
+                brake = 1f;
+                opponentValid = true;
+
+
+
+                //TEST FOR NOW FOR SWITCH BACK
+                if(hit.distance < (tooClose * 0.5f))
+                {
+                    acc = 0.0f;
+                    TriggerExit(new SM_NormalState(sm_driver));
+                }
+            }
+        }
+        Color toUse = (opponentValid) ? Color.red : Color.blue;
+        Debug.DrawRay(origin, sm_driver.transform.forward * sm_driver.rayLength * 2f, toUse);
+
+        //TO-DO: check distance to target, there is a corner to it use brakes, if not do not brakes 
+    }
+
 
     private void Movement()
     {
+
+
 
         Vector3 localTarget = sm_driver.rb.transform.InverseTransformPoint(currentGoalTarget);
         float distanceToTarget = Vector3.Distance(currentGoalTarget, sm_driver.rb.transform.position);
@@ -210,6 +299,12 @@ public class SM_OvertakingState : StateMachine
         //constant acceleration
         float accelerate = 1f;
         float brake = 0.0f;
+
+
+        if (beCaution)
+        {
+            BeCaution(ref brake, ref accelerate);
+        }
 
         steer = Mathf.Clamp(targetAngle * normalSteerIntensity, -1, 1) * Mathf.Sign(sm_driver.rb.velocity.magnitude);    //problem sets the angle directly, so it creates a snapping pos rotation
                                                                                                                          //float steer = 0.0f;
@@ -237,17 +332,7 @@ public class SM_OvertakingState : StateMachine
 
         sm_driver.currentSteer = steer;
 
-        //NEED TO CHANGE JUST PLACED HERE, FOR UPDATE
-        Vector3 ghostWaypoint = sm_driver.circuit.waypoints[sm_driver.currentWaypointIndex].position;
-        float distanceTOWaypoint = Vector3.Distance(ghostWaypoint, sm_driver.rb.transform.position);
-        if (distanceToTarget < 15.0f)
-        {
-            sm_driver.currentWaypointIndex++;
-            if (sm_driver.currentWaypointIndex >= sm_driver.circuit.waypoints.Count)
-                sm_driver.currentWaypointIndex = 0;
 
-            //sm_driver.currentWaypointIndex = sm_driver.currentWaypointIndex; //debug info
-        }
     }
 
 }
