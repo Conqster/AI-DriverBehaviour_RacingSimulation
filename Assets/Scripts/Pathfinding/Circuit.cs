@@ -11,9 +11,14 @@ public class Circuit : MonoBehaviour
     [SerializeField] private Color endColour = Color.black;
     [SerializeField] private Color pathLine = Color.green;
 
+    [Header("Debugger")]
+    [SerializeField] private bool drawSphere = false;
+    [SerializeField] private bool drawLine = true;
+    private bool done = false;
+
     private void OnDrawGizmos()
     {
-        if (waypoints == null && waypoints.Count > 0)
+        if (waypoints == null && waypoints.Count > 0 && !drawLine)
             return;
 
         for(int i = 0; i < waypoints.Count; i++)
@@ -30,23 +35,34 @@ public class Circuit : MonoBehaviour
             }
         }
 
-        Colour();
+        if(!done)
+            Colour();
     }
 
 
     private void Colour()
     {
-        Renderer startRend = waypoints[0].GetComponent<Renderer>();
-        startRend.material.color = startColour;
-        
-        Renderer endRend = waypoints[waypoints.Count - 1].GetComponent<Renderer>();
-        endRend.material.color = endColour; 
 
+        Renderer endRend = waypoints[waypoints.Count - 1].GetComponent<Renderer>();
+        Material defaultMat = endRend.GetComponent<Renderer>().sharedMaterial;
+
+        Material instanceMat1 = new Material(defaultMat);
+        Material instanceMat2 = new Material(defaultMat);
+
+        endRend.material = instanceMat1;
+        endRend.sharedMaterial.color = endColour;
+
+
+        Renderer startRend = waypoints[0].GetComponent<Renderer>();
+        startRend.material = instanceMat2;
+        startRend.sharedMaterial.color = startColour;
+        
+        done = true;
     }
 
     private void OnDrawGizmosSelected()
     {
-        if(waypoints != null && waypoints.Count > 0)
+        if(waypoints != null && waypoints.Count > 0 && drawSphere)
         {
             for(int i = 0; i < waypoints.Count; i++)
             {

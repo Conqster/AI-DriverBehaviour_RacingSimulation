@@ -31,7 +31,7 @@ public class WheelColliderTest : MonoBehaviour
             wheelMeshes[i].transform.rotation = quat;
         }
 
-        print(wheelColliders[0].steerAngle);
+        //print(wheelColliders[0].steerAngle);
 
     }
 
