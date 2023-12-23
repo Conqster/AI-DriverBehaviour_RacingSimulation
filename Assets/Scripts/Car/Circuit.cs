@@ -6,6 +6,10 @@ public class Circuit : MonoBehaviour
 {
     public List<Transform> waypoints = new List<Transform>();
 
+    [Header("Debug Colour")]
+    [SerializeField] private Color startColour = Color.red;
+    [SerializeField] private Color endColour = Color.black;
+    [SerializeField] private Color pathLine = Color.green;
 
     private void OnDrawGizmos()
     {
@@ -14,7 +18,7 @@ public class Circuit : MonoBehaviour
 
         for(int i = 0; i < waypoints.Count; i++)
         {
-            Gizmos.color = Color.white;
+            Gizmos.color = pathLine;
             if (i != (waypoints.Count - 1))
             {
                 Gizmos.DrawLine(waypoints[i].position, waypoints[i + 1].position);
@@ -24,8 +28,20 @@ public class Circuit : MonoBehaviour
                 //print("This is the breakout value: " + i);
                 Gizmos.DrawLine(waypoints[i].position, waypoints[0].position);
             }
-
         }
+
+        Colour();
+    }
+
+
+    private void Colour()
+    {
+        Renderer startRend = waypoints[0].GetComponent<Renderer>();
+        startRend.material.color = startColour;
+        
+        Renderer endRend = waypoints[waypoints.Count - 1].GetComponent<Renderer>();
+        endRend.material.color = endColour; 
+
     }
 
     private void OnDrawGizmosSelected()

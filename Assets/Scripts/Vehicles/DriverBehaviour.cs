@@ -12,7 +12,6 @@ public class DriverBehaviour : MonoBehaviour
     private Rigidbody rb;
     private ObstacleAvoidance obstacleAvoidance;
 
-    public GameObject brakeLight;
 
     private StateMachine driverSM;
     public StateMachineData driverSMData;
@@ -48,7 +47,7 @@ public class DriverBehaviour : MonoBehaviour
         circuit = GameObject.FindGameObjectWithTag("Circuit").GetComponent<Circuit>();
         target = circuit.waypoints[currentWaypointIndex].position;
         rb = GetComponent<Rigidbody>();
-        driverData = new DriverData(engine, circuit, rb, obstacleAvoidance, brakeLight, transform);
+        driverData = new DriverData(engine, circuit, rb, obstacleAvoidance, transform);
         driverData.mat = mat;
         driverData.canUseBlock = canBlock;  
         driverSM = new SM_DefaultState(driverData);
@@ -109,15 +108,15 @@ public class DriverBehaviour : MonoBehaviour
 
 
 
-        if (brake > 0.0f)
-        {
-            brakeLight.SetActive(true);
-            brake -= 0.5f;     //CURRENT TO PREVENT BRAKING TOO HARD CHANGE LATER
-        }
-        else
-        {
-            brakeLight.SetActive(false);
-        }
+        //if (brake > 0.0f)
+        //{
+        //    brakeLight.SetActive(true);
+        //    brake -= 0.5f;     //CURRENT TO PREVENT BRAKING TOO HARD CHANGE LATER
+        //}
+        //else
+        //{
+        //    brakeLight.SetActive(false);
+        //}
 
 
         if (distanceToTarget < 15.0f)

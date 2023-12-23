@@ -37,6 +37,9 @@ namespace Car
         private Rigidbody rb;
         private float topSpeed;
 
+        public GameObject brakeLight;
+        private float lightTimer = 0.1f;
+
         public float TopSpeed
         {
             get { return topSpeed; }
@@ -49,6 +52,11 @@ namespace Car
             InitWheelColliderAndMesh();
             rb = GetComponent<Rigidbody>();
             currentMotorTorque = fullTorqueAcrossAllWheel - (tractionControl * fullTorqueAcrossAllWheel);   
+
+            if(brakeLight != null)
+            {
+                brakeLight.SetActive(false);
+            }
         }
 
 
@@ -80,14 +88,14 @@ namespace Car
             }
 
 
-
-
-
+           lightTimer += Time.deltaTime;
+            lightTimer = Mathf.Clamp01(lightTimer);
         }
 
         public void Move(float acceleration, float brake, float steer)
         {
 
+            //print("Break Value: " + brake);
 
             //Clamping values 
             acceleration = Mathf.Clamp(acceleration, -1, 1);
@@ -103,6 +111,21 @@ namespace Car
 
             TractionControl();
             WheelVisualRot();
+
+
+            
+            if(brake > 0)
+            {
+                brakeLight.SetActive(true);
+                lightTimer = 0.0f;
+            }
+            else
+            {
+                if(lightTimer > 0.1f)
+                {
+                    brakeLight.SetActive(false);
+                }
+            }
 
         }
 
@@ -143,6 +166,7 @@ namespace Car
             {
                 foreach (var wheel in wheelCollider)
                 {
+                    //print("break Value" + brake);
                     wheel.brakeTorque = brake * reverseTorque; // GOING TO NEED TO CHANGE THIS
                     //wheel.motorTorque = -reverseTorque * brake;
                 }

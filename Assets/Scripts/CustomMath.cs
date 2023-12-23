@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 
+
+
 public static class CustomMath
 {
-    
-
     public static Vector3 AbsVector(Vector3 v)
     {
         Vector3 temp = Vector3.zero;

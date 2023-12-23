@@ -14,12 +14,6 @@ public struct OvertakingInfo
     public Ghost potentialGoal;
     public Ghost initialGoal;
     public Vector3 initialWaypoint; //keeps track of waypoint
-    //public float distanceToNextCorner;
-    //public int numberOfCars;
-    //public float initialSpeed;
-    //public float requiredSpeed;
-    //public Vector3 opponentInitialPos;
-    //public Vector3 predicitedOpponentPos;
 }
 
 
@@ -30,7 +24,6 @@ public class SM_OvertakingState : StateMachine
     private OvertakingInfo overtakingData;
     private float aggersiveMeter = 0.0f;
 
-    private float steer;
 
     private float steeringSensitivity = 0.01f;
     private float normalSteerIntensity = 0.01f;
@@ -62,8 +55,6 @@ public class SM_OvertakingState : StateMachine
         //if not readjust to position 
         //for a smooth overtake
 
-        steer = sm_driver.currentSteer;
-
 
         sm_driver.steeringSensitivity = steeringSensitivity;
         sm_driver.visionLength = visionLength;
@@ -79,20 +70,33 @@ public class SM_OvertakingState : StateMachine
 
     protected override void Update()
     {
-        
+        accelerate = 1.0f;
+        brake = 0.0f;
 
-        if(OvertakingAchieved())
+        if (beCaution)
+        {
+            BeCaution(ref brake, ref accelerate);
+        }
+
+
+        if (OvertakingAchieved())
         {
             TriggerExit(new SM_NormalState(sm_driver));
         }
 
 
-  
+        ObstacleAviodance(visionLength, visionAngle, steeringSensitivity, ref steer);
 
 
-        if(UpdateGoal(ref currentGoalTarget))
+        if (UpdateGoal(ref currentGoalTarget))
         {
-            Movement();
+            //Movement();
+            //COULD DO THIS
+            //if(!UpdateGoal(ref sm_driver.currentTarget))
+            //{
+            //    TriggerExit(new SM_NormalState(sm_driver));
+            //}
+            UpdateCurrentGoal(currentGoalTarget);
         }
         else
         {
@@ -101,6 +105,7 @@ public class SM_OvertakingState : StateMachine
             //       ACCELERATION INTENSITY INCREASES 
             TriggerExit(new SM_NormalState(sm_driver));
         }
+
 
 
         if(ChangesInConditions(ref aggersiveMeter))
@@ -116,19 +121,24 @@ public class SM_OvertakingState : StateMachine
             }
         }
 
+        // not really required any more 
+        overtakingData.initialWaypoint = UpdateWaypointGoal();
+        
 
+
+        #region OldWays
         //NEED TO CHANGE JUST PLACED HERE, FOR UPDATE
-        float distanceToWaypoint = Vector3.Distance(overtakingData.initialWaypoint, sm_driver.rb.transform.position);
-        if (distanceToWaypoint < 15.0f)
-        {
-            sm_driver.currentWaypointIndex++;
-            if (sm_driver.currentWaypointIndex >= sm_driver.circuit.waypoints.Count)
-                sm_driver.currentWaypointIndex = 0;
+        //float distanceToWaypoint = Vector3.Distance(overtakingData.initialWaypoint, sm_driver.rb.transform.position);
+        //if (distanceToWaypoint < 15.0f)
+        //{
+        //    sm_driver.currentWaypointIndex++;
+        //    if (sm_driver.currentWaypointIndex >= sm_driver.circuit.waypoints.Count)
+        //        sm_driver.currentWaypointIndex = 0;
 
-            overtakingData.initialWaypoint = sm_driver.circuit.waypoints[sm_driver.currentWaypointIndex].position;
-            //sm_driver.currentWaypointIndex = sm_driver.currentWaypointIndex; //debug info
-        }
-
+        //    overtakingData.initialWaypoint = sm_driver.circuit.waypoints[sm_driver.currentWaypointIndex].position;
+        //    //sm_driver.currentWaypointIndex = sm_driver.currentWaypointIndex; //debug info
+        //}
+        #endregion
         base.Update();
     }
 
@@ -170,7 +180,7 @@ public class SM_OvertakingState : StateMachine
                 goal = overtakingData.initialGoal.obj.transform.position;
 
                 //FOR DEBUGGING PURPOSES
-                sm_driver.currentTargetInfo = overtakingData.initialGoal.obj.transform;
+                //sm_driver.currentTargetInfo = overtakingData.initialGoal.obj.transform;
                 return true;
             }
         }
@@ -183,7 +193,7 @@ public class SM_OvertakingState : StateMachine
                 goal = overtakingData.potentialGoal.obj.transform.position;
 
                 //FOR DEBUGGING PURPOSES
-                sm_driver.currentTargetInfo = overtakingData.potentialGoal.obj.transform;
+                //sm_driver.currentTargetInfo = overtakingData.potentialGoal.obj.transform;
                 return true;
             }
         }
@@ -197,7 +207,7 @@ public class SM_OvertakingState : StateMachine
 
 
                 //FOR DEBUGGING PURPOSES
-                sm_driver.currentTargetInfo = overtakingData.overtakeGhost.obj.transform;
+                //sm_driver.currentTargetInfo = overtakingData.overtakeGhost.obj.transform;
                 return true;
             }
         }
@@ -285,54 +295,5 @@ public class SM_OvertakingState : StateMachine
     }
 
 
-    private void Movement()
-    {
-
-
-
-        Vector3 localTarget = sm_driver.rb.transform.InverseTransformPoint(currentGoalTarget);
-        float distanceToTarget = Vector3.Distance(currentGoalTarget, sm_driver.rb.transform.position);
-        float targetAngle = Mathf.Atan2(localTarget.x, localTarget.z) * Mathf.Rad2Deg;
-
-        sm_driver.targetAngle = targetAngle;
-
-        //constant acceleration
-        float accelerate = 1f;
-        float brake = 0.0f;
-
-
-        if (beCaution)
-        {
-            BeCaution(ref brake, ref accelerate);
-        }
-
-        steer = Mathf.Clamp(targetAngle * normalSteerIntensity, -1, 1) * Mathf.Sign(sm_driver.rb.velocity.magnitude);    //problem sets the angle directly, so it creates a snapping pos rotation
-                                                                                                                         //float steer = 0.0f;
-        sm_driver.normalSteerIntensity = normalSteerIntensity;
-
-        sm_driver.obstacleAvoidance.Perception(visionLength, visionAngle, steeringSensitivity * 100f, ref steer);
-        //print("steer value: " + steer);
-
-
-
-        sm_driver.engine.Move(accelerate, brake, steer);
-
-
-
-        if (brake > 0.0f)
-        {
-            sm_driver.brakeLight.SetActive(true);
-            brake -= 0.5f;     //CURRENT TO PREVENT BRAKING TOO HARD CHANGE LATER
-        }
-        else
-        {
-            sm_driver.brakeLight.SetActive(false);
-        }
-
-
-        sm_driver.currentSteer = steer;
-
-
-    }
 
 }

@@ -1,4 +1,5 @@
 using Car;
+using System.ComponentModel;
 using UnityEngine;
 using static StateMachine;
 
@@ -10,8 +11,6 @@ public class DriverData
     public Circuit circuit;
     public Rigidbody rb;
     public ObstacleAvoidance obstacleAvoidance;
-
-    public GameObject brakeLight;
 
     public int currentWaypointIndex = 0;
 
@@ -33,7 +32,9 @@ public class DriverData
     [SerializeField] public bool testState = false;
     [SerializeField, Range(0.0f, 5.0f)] public float raycastUpOffset = 1.0f;
     [SerializeField, Range(0.0f, 15.0f)] public float rayLength = 15.0f;
-    public Transform currentTargetInfo;
+    public Vector3 currentTarget;
+    public Transform currentWaypoint = null;
+    public WhiskeySearchType behindRayType = WhiskeySearchType.CentralRayWithWhiskey;
 
     [Header("Debugger")]
     [SerializeField] public float targetAngle;
@@ -44,13 +45,12 @@ public class DriverData
     [SerializeField] public float normalSteerIntensity;
 
 
-    public DriverData(CarEngine engine, Circuit circuit, Rigidbody rb, ObstacleAvoidance obstacleAvoidance, GameObject brakeLight, Transform transform)
+    public DriverData(CarEngine engine, Circuit circuit, Rigidbody rb, ObstacleAvoidance obstacleAvoidance, Transform transform)
     {
         this.engine = engine;
         this.circuit = circuit;
         this.rb = rb;
         this.obstacleAvoidance = obstacleAvoidance;
-        this.brakeLight = brakeLight;
         this.transform = transform;
     }
 }
@@ -103,10 +103,15 @@ public class StateMachine
     protected float sm_duration;
     
     protected DriverData sm_driver;
-    
-    
-    //protected float 
-    
+
+    protected float currentSteerSensitity;
+    private float lastObtacleTime = Mathf.Infinity;
+
+    protected float accelerate;
+    protected float brake;
+    protected float steer;
+
+
     public StateMachine(DriverData driver)
     {
         sm_name = "Base State";
@@ -158,18 +163,14 @@ public class StateMachine
     protected virtual void Update()
     {
         sm_duration += Time.deltaTime;
-        sm_driver.blockingCooldown -= Time.deltaTime;   
+        sm_driver.blockingCooldown -= Time.deltaTime;
+        sm_driver.blockingCooldown = Mathf.Clamp(sm_driver.blockingCooldown, -10.0f, 10.0f);
 
-        //if(sm_driver.testState)
-        //{
-        //    StateMachine testState = new SM_TestState(sm_driver);
+        Movement();
 
-        //    Debug.Log(testState.GetSM_Name());
+        sm_driver.currentSteer = steer;
 
-        //    if (GetStateMachine() != testState)
-        //        TriggerExit(testState);
-        //}
-
+        UpdateWaypointGoal();
     
         if (sm_transitionTriggered)
             return;
@@ -203,6 +204,214 @@ public class StateMachine
     public StateMachineData GetStateMachineData() { return sm_stateData; }
 
     private StateMachine GetStateMachine() { return this; }
-    
+
+
+    /// <summary>
+    /// Obstacle Avoidance function,
+    /// Needed to be called by any state that requires it,
+    /// To modify there use of it.
+    /// </summary>
+    /// <param name="visionLength"></param>
+    /// <param name="visionAngle"></param>
+    /// <param name="sensititity"></param>
+    /// <param name="steer"></param>
+    protected virtual void ObstacleAviodance(float visionLength, float visionAngle, float sensititity, ref float steer)
+    {
+        //CALCULATE ANGLE TO TARGET
+        Vector3 localTarget = sm_driver.rb.transform.InverseTransformPoint(sm_driver.currentTarget);
+        float distanceToTarget = Vector3.Distance(sm_driver.currentTarget, sm_driver.rb.transform.position);
+        float targetAngle = Mathf.Atan2(localTarget.x, localTarget.z) * Mathf.Rad2Deg;
+        sm_driver.targetAngle = targetAngle;     //debugs the target angle
+
+
+        //obstacleAhead = obstacleAvoidance.DangerAhead(visionLength, visionAngle);
+        //Should ignore steering towards target if obstacle ahead
+        if (sm_driver.obstacleAvoidance.DangerAhead(visionLength, visionAngle))
+        {
+            lastObtacleTime = 0.0f;
+        }
+        else
+        {
+            //steer based on the difference to target angle and use sensitivity.
+            //steer = Mathf.Clamp(targetAngle * steeringSensitivity, -1, 1) * Mathf.Sign(sm_driver.rb.velocity.magnitude);    //problem sets the angle directly, so it creates a snapping pos rotation
+
+
+            AvoidedObstacle(ref currentSteerSensitity, sm_driver.steeringSensitivity);
+            //SteerToTarget(targetAngle, normalSteerIntensity * 10f, ref steer);
+            steer = Mathf.Clamp(targetAngle * currentSteerSensitity, -1, 1) * Mathf.Sign(sm_driver.rb.velocity.magnitude);    //problem sets the angle directly, so it creates a snapping pos rotation
+            //float steer = 0.0f;
+        }
+        sm_driver.normalSteerIntensity = currentSteerSensitity;
+
+        sm_driver.obstacleAvoidance.Perception(visionLength, visionAngle, sm_driver.steeringSensitivity * 100f, ref steer);
+
+        sm_driver.obstacleAvoidance.Braking(ref brake, visionLength, visionAngle, 0.5f);
+
+    }
+
+
+    /// <summary>
+    /// Updates waypoints,
+    /// based on the distance to current waypoint
+    /// And the circuit of the driver
+    /// </summary>
+    /// <returns></returns>
+    protected Vector3 UpdateWaypointGoal()
+    {
+        if(sm_driver.currentWaypoint == null)
+        {
+            sm_driver.currentWaypoint = sm_driver.circuit.waypoints[sm_driver.currentWaypointIndex];
+        }
+
+        if(sm_driver.currentWaypoint)
+        {
+            float distanceToTarget = Vector3.Distance(sm_driver.currentWaypoint.position, sm_driver.rb.transform.position);
+
+            if (distanceToTarget < 15.0f)
+            {
+                sm_driver.currentWaypointIndex++;
+                if (sm_driver.currentWaypointIndex >= sm_driver.circuit.waypoints.Count)
+                    sm_driver.currentWaypointIndex = 0;
+
+                sm_driver.currentWaypoint = sm_driver.circuit.waypoints[sm_driver.currentWaypointIndex];
+                //sm_driver.currentWaypointIndex = sm_driver.currentWaypointIndex; //debug info
+            }
+        }
+        else
+            return Vector3.zero;
+
+        return sm_driver.currentWaypoint.position;
+    }
+
+
+    /// <summary>
+    /// Updates the current target
+    /// </summary>
+    /// <param name="goal"></param>
+    protected virtual void UpdateCurrentGoal(Vector3 goal)
+    {
+        sm_driver.currentTarget = goal;
+    }
+
+
+    /// <summary>
+    /// Applys accelaration, 
+    /// brake and steers the car
+    /// </summary>
+    private void Movement()
+    {
+        //MOVES THE CAR
+        sm_driver.engine.Move(accelerate, brake, steer);
+    }
+
+
+    /// <summary>
+    /// Ease normal Steering
+    /// Back to full strength,
+    /// After just avioded obstacle
+    /// </summary>
+    /// <param name="normalSteerIntensity"></param>
+    /// <param name="steerIntensity"></param>
+    private void AvoidedObstacle(ref float normalSteerIntensity, float steerIntensity)
+    {
+        lastObtacleTime += Time.deltaTime;        // increases overtime last obstacle avioded 
+        float minIntensity = steerIntensity * 0.2f;
+
+        normalSteerIntensity = Mathf.Lerp(minIntensity, steerIntensity, lastObtacleTime);
+    }
+
+
+    protected bool CheckBehind(out Rigidbody opponentRb, float distance, WhiskeySearchType rayType = (WhiskeySearchType)4, float checkAngle = 10.0f)
+    {
+        opponentRb = null;
+
+        Vector3 rightWhiskey = Vector3.zero;
+        Vector3 leftWhiskey = Vector3.zero;
+
+        Vector3 origin = sm_driver.transform.position +
+                 new Vector3(0.0f, sm_driver.raycastUpOffset, 0.0f);
+
+
+
+        bool midCheck = false;
+        bool rightCheck = false;
+        bool leftCheck = false;
+
+
+        switch (rayType)
+        {
+            case WhiskeySearchType.CentralRayWithWhiskey:
+                rightWhiskey = (Quaternion.Euler(0, checkAngle, 0) * -sm_driver.transform.forward);
+                leftWhiskey = (Quaternion.Euler(0, -checkAngle, 0) * -sm_driver.transform.forward);
+
+
+                rightCheck = DetectVehicle(out opponentRb, origin, rightWhiskey, distance);
+                leftCheck = DetectVehicle(out opponentRb, origin, leftWhiskey, distance);
+                midCheck = DetectVehicle(out opponentRb, origin, -sm_driver.transform.forward, distance);
+
+                Debug.DrawRay(origin, -sm_driver.transform.forward * distance, (midCheck) ? Color.red : Color.green);
+                Debug.DrawRay(origin, rightWhiskey * distance, (rightCheck) ? Color.red : Color.green);
+                Debug.DrawRay(origin, leftWhiskey * distance, (leftCheck) ? Color.red : Color.green);
+                break;
+            case WhiskeySearchType.WhiskeysOnly:
+                rightWhiskey = (Quaternion.Euler(0, checkAngle, 0) * -sm_driver.transform.forward);
+                leftWhiskey = (Quaternion.Euler(0, -checkAngle, 0) * -sm_driver.transform.forward);
+
+                rightCheck = DetectVehicle(out opponentRb, origin, rightWhiskey, distance);
+                leftCheck = DetectVehicle(out opponentRb, origin, leftWhiskey, distance);
+
+                Debug.DrawRay(rightWhiskey, -sm_driver.transform.forward * distance, (rightCheck) ? Color.red : Color.green);
+                Debug.DrawRay(leftWhiskey, -sm_driver.transform.forward * distance, (leftCheck) ? Color.red : Color.green);
+                break;
+            case WhiskeySearchType.SingleOnly:
+
+                midCheck = DetectVehicle(out opponentRb, origin, -sm_driver.transform.forward, distance);
+
+                Debug.DrawRay(origin, -sm_driver.transform.forward * distance, (midCheck) ? Color.red : Color.green);
+                break;
+            case WhiskeySearchType.ParallelSide:
+                rightWhiskey = origin + (sm_driver.transform.right);
+                leftWhiskey = origin - sm_driver.transform.right;
+
+                rightCheck = DetectVehicle(out opponentRb, rightWhiskey, -sm_driver.transform.forward, distance);
+                leftCheck = DetectVehicle(out opponentRb, leftWhiskey, -sm_driver.transform.forward, distance);
+
+                Debug.DrawRay(rightWhiskey, -sm_driver.transform.forward * distance, (rightCheck) ? Color.red : Color.green);
+                Debug.DrawRay(leftWhiskey, -sm_driver.transform.forward * distance, (leftCheck) ? Color.red : Color.green);
+                break;
+            case WhiskeySearchType.CentralWithParallel:
+                rightWhiskey = origin + (sm_driver.transform.right);
+                leftWhiskey = origin - sm_driver.transform.right;
+
+                rightCheck = DetectVehicle(out opponentRb, rightWhiskey, -sm_driver.transform.forward, distance);
+                leftCheck = DetectVehicle(out opponentRb, leftWhiskey, -sm_driver.transform.forward, distance);
+                midCheck = DetectVehicle(out opponentRb, origin, -sm_driver.transform.forward, distance);
+
+                Debug.DrawRay(origin, -sm_driver.transform.forward * distance, (midCheck) ? Color.red : Color.green);
+                Debug.DrawRay(rightWhiskey, -sm_driver.transform.forward * distance, (rightCheck) ? Color.red : Color.green);
+                Debug.DrawRay(leftWhiskey, -sm_driver.transform.forward * distance, (leftCheck) ? Color.red : Color.green);
+                break;
+        }
+
+
+        return midCheck || rightCheck || leftCheck;
+    }
+
+
+    private bool DetectVehicle(out Rigidbody target, Vector3 start, Vector3 dir, float distance)
+    {
+        RaycastHit hit; 
+        target = null;  
+
+        if(Physics.Raycast(start, dir, out hit, distance))
+        {
+            if(!hit.transform.CompareTag("Vehicle"))
+            {
+                target = hit.rigidbody;
+                return true;
+            }
+        }
+        return false;
+    }
 }
 

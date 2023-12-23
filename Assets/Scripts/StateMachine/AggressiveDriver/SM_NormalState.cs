@@ -5,13 +5,12 @@ using UnityEngine;
 
 public class SM_NormalState : StateMachine
 {
-    private Vector3 waypointTarget;
+    //private Vector3 waypointTarget;
 
     private float steeringSensitivity = 0.01f;
     private float visionLength = 9.0f;
     private float visionAngle = 25.0f;
 
-    private float steer;
 
     private float lastObtacleTime = Mathf.Infinity;
     private float normalSteerIntensity = 0.01f;
@@ -29,7 +28,6 @@ public class SM_NormalState : StateMachine
 
     protected override void Enter()
     {
-        waypointTarget = sm_driver.circuit.waypoints[sm_driver.currentWaypointIndex].position;
 
         sm_driver.steeringSensitivity = steeringSensitivity;
         sm_driver.visionLength = visionLength;
@@ -40,7 +38,15 @@ public class SM_NormalState : StateMachine
 
     protected override void Update()
     {
-        sm_driver.currentTargetInfo = sm_driver.circuit.waypoints[sm_driver.currentWaypointIndex];
+        accelerate = 1.0f;
+        brake = 0.0f;
+
+
+        //UPDATES THE WAYPOINT AND CURRENT GOAL/TARGET
+        UpdateCurrentGoal(UpdateWaypointGoal());
+
+
+        //sm_driver.currentTargetInfo = sm_driver.circuit.waypoints[sm_driver.currentWaypointIndex];
         if (sm_driver.goBerserk)
         {
             TriggerExit(new SM_AggressiveState(sm_driver));
@@ -53,7 +59,7 @@ public class SM_NormalState : StateMachine
 
 
         //TEST TEST TEST 
-        if(CheckBehind(out Rigidbody target) && sm_driver.canUseBlock && sm_driver.blockingCooldown < 0)
+        if(CheckBehind(out Rigidbody target, sm_driver.rayLength * 1.5f, sm_driver.behindRayType) && sm_driver.canUseBlock && sm_driver.blockingCooldown < 0)
         {
             //Time.timeScale = 0.3f;
 
@@ -94,72 +100,12 @@ public class SM_NormalState : StateMachine
             //sm_event = SM_Event.Exit;
         }
 
+        ObstacleAviodance(visionLength, visionAngle, steeringSensitivity, ref steer);
 
-        Vector3 localTarget = sm_driver.rb.transform.InverseTransformPoint(waypointTarget);
-        float distanceToTarget = Vector3.Distance(waypointTarget, sm_driver.rb.transform.position);
-        float targetAngle = Mathf.Atan2(localTarget.x, localTarget.z) * Mathf.Rad2Deg;
-
-        sm_driver.targetAngle = targetAngle;
-
-        //constant acceleration
-        float accelerate = 1f;
-        float brake = 0.0f;
-
-        
-
-        //obstacleAhead = obstacleAvoidance.DangerAhead(visionLength, visionAngle);
-        //Should ignore steering towards target if obstacle ahead
-        if (sm_driver.obstacleAvoidance.DangerAhead(visionLength, visionAngle))
-        {
-            lastObtacleTime = 0.0f;
-        }
-        else
-        {
-            //steer based on the difference to target angle and use sensitivity.
-            //steer = Mathf.Clamp(targetAngle * steeringSensitivity, -1, 1) * Mathf.Sign(sm_driver.rb.velocity.magnitude);    //problem sets the angle directly, so it creates a snapping pos rotation
-
-            
-            AvoidedObstacle(ref normalSteerIntensity, steeringSensitivity);
-            //SteerToTarget(targetAngle, normalSteerIntensity * 10f, ref steer);
-            steer = Mathf.Clamp(targetAngle * normalSteerIntensity, -1, 1) * Mathf.Sign(sm_driver.rb.velocity.magnitude);    //problem sets the angle directly, so it creates a snapping pos rotation
-            //float steer = 0.0f;
-        }
-
-        sm_driver.normalSteerIntensity = normalSteerIntensity;
-
-        sm_driver.obstacleAvoidance.Perception(visionLength, visionAngle, steeringSensitivity * 100f, ref steer);
-        //print("steer value: " + steer);
-
-
+        float distanceToTarget = Vector3.Distance(sm_driver.currentTarget, sm_driver.rb.transform.position);
         Brakes(ref brake, distanceToTarget, ref accelerate);
-        sm_driver.obstacleAvoidance.Braking(ref brake, visionLength, visionAngle, 0.5f);
-        //brake = 1.0f;
-        sm_driver.engine.Move(accelerate, brake, steer);
 
 
-
-        if (brake > 0.0f)
-        {
-            sm_driver.brakeLight.SetActive(true);
-            brake -= 0.5f;     //CURRENT TO PREVENT BRAKING TOO HARD CHANGE LATER
-        }
-        else
-        {
-            sm_driver.brakeLight.SetActive(false);
-        }
-
-
-        sm_driver.currentSteer = steer;
-
-        if (distanceToTarget < 15.0f)
-        {
-            sm_driver.currentWaypointIndex++;
-            if (sm_driver.currentWaypointIndex >= sm_driver.circuit.waypoints.Count)
-                sm_driver.currentWaypointIndex = 0;
-
-            waypointTarget = sm_driver.circuit.waypoints[sm_driver.currentWaypointIndex].position;
-            //sm_driver.currentWaypointIndex = sm_driver.currentWaypointIndex; //debug info
-        }
         base.Update();
     }
 
@@ -178,7 +124,7 @@ public class SM_NormalState : StateMachine
             else
             {
                 //TriggerExit(new SM_AggressiveState(sm_driver));
-                //TriggerExit(new SM_NormalState(sm_driver));
+                TriggerExit(new SM_NormalState(sm_driver));
                 tryOvertakeCoolDown = 5.0f;
             }
             wantToOverTake = false;
@@ -259,17 +205,13 @@ public class SM_NormalState : StateMachine
     }
 
 
-    //ease normal steering back to fully strength after just avoided an obstacle
-    private void AvoidedObstacle(ref float normalSteerIntensity, float steerIntensity)
-    {
-        lastObtacleTime += Time.deltaTime;        // increases overtime last obstacle avioded 
-        float minIntensity = steeringSensitivity * 0.2f;
-
-        normalSteerIntensity = Mathf.Lerp(minIntensity, steerIntensity, lastObtacleTime);
-    }
-
-
-    private bool PotentialToOvertake(float directionTo = 0.0f)
+    /// <summary>
+    /// A true/false value to potentially 
+    /// overtake. 
+    /// Later change to using the degree of true
+    /// </summary>
+    /// <returns></returns>
+    private bool PotentialToOvertake()
     {
         ///current speed against opponent speed 
         ///distance to opponent
@@ -361,15 +303,30 @@ public class SM_NormalState : StateMachine
             if(info.opponentTransform != null)
             {
 
+                //TO-DO: REFACTORIZE WITH OTHER DOT PRODUCTS
+                //direction to overtake from 
+                int overtakingdirection = 0;
+
+                Vector3 waypointAhead = sm_driver.currentTarget;
+                Transform targetOpponent = hit.transform;
+
+                Vector3 right = targetOpponent.TransformDirection(targetOpponent.right);
+                Vector3 toOther = waypointAhead - targetOpponent.position;
+
+                float dot = Vector3.Dot(right, toOther);
+
+                overtakingdirection = (dot < 0.0f) ? 1 : -1;
+
                 //TESTING AND NEED CHANGING
-                sm_driver.engine.Move(0.5f, 0.2f, -1.0f);
+                sm_driver.engine.Move(0.5f, 0.2f, overtakingdirection);
 
-
-                float sideOvertakingOffset = 2.0f;    //2 unit offset 
+                //the offsetting value from the opponent 
+                //we overdircetion for which side to consider for overtaking 
+                float sideOvertakingOffset = 2.0f * overtakingdirection;    //2 unit offset 
                 //Vector3 sidePointToOpponent = info.opponentTransform.position - 
                 //                                info.opponentTransform.right * sideOvertakingOffset;
 
-                Vector3 sidePointToOpponent = hit.transform.position -
+                Vector3 sidePointToOpponent = hit.transform.position +
                                 hit.transform.right * sideOvertakingOffset;
 
                 CustomMath.DebugObject(PrimitiveType.Capsule, sidePointToOpponent, sm_driver.mat);
@@ -408,7 +365,7 @@ public class SM_NormalState : StateMachine
 
 
                 //REGISTER CURRENT WAYPOINT IN OVERTAKINGDATA
-                info.initialWaypoint = waypointTarget;
+                info.initialWaypoint = sm_driver.currentWaypoint.position;
 
                 CustomMath.DebugObject(PrimitiveType.Cube, sidePointToOpponent, sm_driver.mat);
 
@@ -417,89 +374,11 @@ public class SM_NormalState : StateMachine
             }
         }
 
-        //info.opponentTransform = hit.transform;
-        //info.numberOfCars = 1;
-        //info.initialSpeed = sm_driver.rb.velocity.magnitude;
-        //info.opponentInitialPos = info.opponentTransform.position;
-
-        //based on calculation initialSpeed opponentSpeed
-        //info.requiredSpeed = 12946.0f;
-
-        //if (hit.transform.tag != "A car" && hit.transform.tag == "Track wall")
-        //    info.distanceToNextCorner = hit.distance;
-
-        ////if some condition are meet like 
-        //if(info.distanceToNextCorner > 50 && info.initialSpeed < sm_driver.engine.TopSpeed)   //TO-DO: TOP SPEED IS YET TO BE IMPLEMENTED
-        //    return true;
-
 
         return false;
     }
 
 
 
-    private bool CheckBehind(out Rigidbody opponent)
-    {
-
-        //MIGHT CHNAGE IT TO ONLY WHISKEYS 
-        //WITHOUT THE MID CHECK 
-
-
-        RaycastHit hit;
-        opponent = null;
-        Vector3 origin = sm_driver.transform.position +
-                         new Vector3(0.0f, sm_driver.raycastUpOffset, 0.0f);
-
-        float checkAngle = 10.0f;
-
-        //Vector3 leftWhiskey = origin - (sm_driver.transform.right);
-        //Vector3 rightWhiskey = origin + (sm_driver.transform.right);
-
-        Vector3 rightWhiskey = (Quaternion.Euler(0, checkAngle, 0) * -sm_driver.transform.forward);
-        Vector3 leftWhiskey = (Quaternion.Euler(0, -checkAngle, 0) * -sm_driver.transform.forward);
-
-
-        float tooClose = sm_driver.rayLength * (3.0f / 4.0f);
-
-        bool midCheck = false;
-        bool rightCheck = false;
-        bool leftCheck = false;
-
-        if (Physics.Raycast(origin, -sm_driver.transform.forward, out hit, sm_driver.rayLength * 1.5f))
-        {
-            if (hit.transform.CompareTag("Vehicle"))
-            {
-                midCheck = true;
-                opponent = hit.rigidbody;
-            }
-
-        }
-
-        if(Physics.Raycast(origin, rightWhiskey, out hit, sm_driver.rayLength * 1.5f))
-        {
-            if(hit.transform.CompareTag("Vehicle"))
-            {
-                rightCheck = true;
-                opponent = hit.rigidbody;
-            }
-
-        }
-
-        if (Physics.Raycast(origin, leftWhiskey, out hit, sm_driver.rayLength * 1.5f))
-        {
-            if(hit.transform.CompareTag("Vehicle"))
-            {
-                leftCheck = true;
-                opponent = hit.rigidbody;
-            }
-
-        }
-
-        Debug.DrawRay(origin, -sm_driver.transform.forward * sm_driver.rayLength * 1.5f, (midCheck) ? Color.red : Color.green);
-        Debug.DrawRay(origin, rightWhiskey * sm_driver.rayLength * 1.5f, (rightCheck) ? Color.red : Color.green);
-        Debug.DrawRay(origin, leftWhiskey * sm_driver.rayLength * 1.5f, (leftCheck) ? Color.red : Color.green);  
-
-        return midCheck || rightCheck || leftCheck;
-    }
-
+    
 }

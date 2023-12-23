@@ -80,12 +80,12 @@ public class SM_AggressiveState : StateMachine
 
         if (brake > 0.0f)
         {
-            sm_driver.brakeLight.SetActive(true);
+            //sm_driver.brakeLight.SetActive(true);
             brake -= 0.5f;     //CURRENT TO PREVENT BRAKING TOO HARD CHANGE LATER
         }
         else
         {
-            sm_driver.brakeLight.SetActive(false);
+            //sm_driver.brakeLight.SetActive(false);
         }
 
 

@@ -24,7 +24,7 @@ public class SM_TestState : StateMachine
         }
 
         sm_driver.engine.Move(0.0f, 1.0f, 0.0f);
-        sm_driver.brakeLight.SetActive(true);
+        //sm_driver.brakeLight.SetActive(true);
 
         base.Update();
     }

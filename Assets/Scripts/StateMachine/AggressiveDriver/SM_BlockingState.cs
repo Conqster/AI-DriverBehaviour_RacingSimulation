@@ -18,7 +18,7 @@ public class SM_BlockingState : StateMachine
     private float minDistanceAllowance = 10.0f;     //distnce to corner, if disntce is less go back to normal state
 
     private float blocksteerIntensity = 0.1f;
-    private float coolDownValue = 5f;
+    private float coolDownValue = 0.5f;
 
     public SM_BlockingState(DriverData driver, BlockingInfo info) : base(driver)
     {
@@ -90,7 +90,7 @@ public class SM_BlockingState : StateMachine
     }
 
 
-
+    //TO-DO: REFACTORIZE TO MAYBE CUSTOM MATH
     private float DirectionTo(Vector3 target)
     {
         float dot;
