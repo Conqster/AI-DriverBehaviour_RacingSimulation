@@ -16,6 +16,7 @@ public class CircuitPathTracker : MonoBehaviour
 
     [Header("Path Behaviour")]
     [SerializeField, Range(0.0f, 10.0f)] private float pathHalfWidth = 5.0f;
+    [SerializeField, Range(0.0f, 1.0f)] private float pathWidthDangerRatio = 0.2f;
     [SerializeField] private Transform user;
     [SerializeField, Range(0.0f, 20.0f)] private float maxDistance = 2.0f;
 
@@ -24,6 +25,7 @@ public class CircuitPathTracker : MonoBehaviour
     [SerializeField] private bool drawPathWidth = true;
     [SerializeField, Range(1.0f, 5.0f)] private float drawWidthThickness = 2.5f;
     [SerializeField] private Color pathWidthColour = Color.blue;
+    [SerializeField] private Color pathWidthDangerColour = Color.red;
     [SerializeField] private bool testing = false;
 
 
@@ -32,6 +34,10 @@ public class CircuitPathTracker : MonoBehaviour
         get { return pathHalfWidth; }   
     }
 
+    public float GetPathWidthDangerRatio
+    {
+        get { return pathWidthDangerRatio; }
+    }
 
 
     private void Start()
@@ -146,11 +152,26 @@ public class CircuitPathTracker : MonoBehaviour
     {
         UnityEditor.Handles.color = pathWidthColour;
 
-        Vector3 leftPoint = transform.position - (transform.right * pathHalfWidth);
-        Vector3 rightPoint = transform.position + (transform.right * pathHalfWidth);
+        Vector3 safeLeftPoint = transform.position - (transform.right * (pathHalfWidth * (1 - pathWidthDangerRatio)));
+        Vector3 safeRightPoint = transform.position + (transform.right * (pathHalfWidth * (1 - pathWidthDangerRatio)));
 
 
-        UnityEditor.Handles.DrawLine(leftPoint, rightPoint, drawWidthThickness);
+        UnityEditor.Handles.DrawLine(safeLeftPoint, safeRightPoint, drawWidthThickness);
+
+        UnityEditor.Handles.color = pathWidthDangerColour;
+
+        //Vector3 leftPoint = transform.position - (transform.right * pathHalfWidth);
+        //Vector3 rightPoint = transform.position + (transform.right * pathHalfWidth);
+
+        Vector3 leftSidePL = safeLeftPoint - (transform.right * (pathHalfWidth * pathWidthDangerRatio));
+        Vector3 leftSidePR = safeLeftPoint;
+
+        UnityEditor.Handles.DrawLine(leftSidePL, leftSidePR, drawWidthThickness);
+
+        Vector3 rightSidePL = safeRightPoint;
+        Vector3 rightSidePR = safeRightPoint + (transform.right * (pathHalfWidth * pathWidthDangerRatio));
+
+        UnityEditor.Handles.DrawLine(rightSidePL, rightSidePR, drawWidthThickness);
     }
 
 }

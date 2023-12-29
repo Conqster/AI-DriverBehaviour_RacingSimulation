@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 
 
@@ -18,6 +17,44 @@ public static class CustomMath
         return temp;
     }
 
+
+
+    public static float GetRatio(float min, float max, float value)
+    {
+        try
+        {
+            float? ratio = Ratio(min, max, value);
+            if (ratio != null)
+            {
+                return (float)ratio;
+            }
+        }
+        catch (System.Exception e)
+        {
+            Debug.Log(e);
+        }
+        return 0;
+    }
+
+
+    private static float? Ratio(float min, float max, float value)
+    {
+
+        if (min == max)
+        {
+            throw new System.ArgumentException($"Invalid input: min = {min} are equal max = {max}");
+        }
+        else if (value < min)
+        {
+            throw new System.ArgumentOutOfRangeException($"Invalid input: value = {value} is less than min = {min}");
+        }
+        else if (value > max)
+        {
+            throw new System.ArgumentOutOfRangeException($"Invalid input: value = {value} is greater than max = {max}");
+        }
+
+        return Mathf.Clamp01((value - min) / (max - min));
+    }
 
     public static bool RayIntersectsVolume(Vector3 rayOrigin, Vector3 rayDirection, Bounds volume, out RaycastHit hit)
     {

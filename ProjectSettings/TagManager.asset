@@ -8,6 +8,8 @@ TagManager:
   - WheelMesh
   - Obstacle
   - Vehicle
+  - Wall
+  - Track
   layers:
   - Default
   - TransparentFX

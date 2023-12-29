@@ -49,6 +49,7 @@ namespace Car
 
         private void Start()
         {
+            //Time.timeScale = 0.2f;
             InitWheelColliderAndMesh();
             rb = GetComponent<Rigidbody>();
             currentMotorTorque = fullTorqueAcrossAllWheel - (tractionControl * fullTorqueAcrossAllWheel);   
