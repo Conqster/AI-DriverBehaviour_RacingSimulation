@@ -6,6 +6,9 @@ public class Circuit : MonoBehaviour
 {
     public List<Transform> waypoints = new List<Transform>();
 
+    [Header("Behaviour")]
+    [SerializeField] private bool removeChildrenMesh = true;
+
     [Header("Debug Colour")]
     [SerializeField] private Color startColour = Color.red;
     [SerializeField] private Color endColour = Color.black;
@@ -15,6 +18,19 @@ public class Circuit : MonoBehaviour
     [SerializeField] private bool drawSphere = false;
     [SerializeField] private bool drawLine = true;
     private bool done = false;
+
+
+    private void Start()
+    {
+        if(removeChildrenMesh)
+        {
+            int childCount = transform.childCount;  
+            for(int i = 0; i < childCount; i++)
+            {
+                transform.GetChild(i).GetComponent<MeshRenderer>().enabled = false; 
+            }
+        }
+    }
 
     private void OnDrawGizmos()
     {

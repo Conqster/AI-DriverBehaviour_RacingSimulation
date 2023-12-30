@@ -9,8 +9,8 @@ public class CircuitPathTracker : MonoBehaviour
     private Vector3 target = Vector3.zero;
 
     [Header("Behaviour")]
-    [SerializeField, Range(0.0f, 30.0f)] private float currentSpeed = 5.0f;
-    [SerializeField, Range(0.0f, 100.0f)] private float maxSpeed = 100.0f;
+    [SerializeField, Range(0.0f, 300.0f)] private float currentSpeed = 5.0f;
+    [SerializeField, Range(0.0f, 300.0f)] private float maxSpeed = 100.0f;
     [SerializeField, Range(0.0f, 100.0f)] private float rotSpeed = 2.0f;
     [SerializeField, Range(0.0f, 10.0f)] private float reachedTargetTreshold = 2.0f;
 
@@ -79,7 +79,7 @@ public class CircuitPathTracker : MonoBehaviour
 
             if (currentSpeed < maxSpeed)
             {
-                currentSpeed += 30.0f * Time.deltaTime;
+                currentSpeed += 40.0f * Time.deltaTime;
             }
 
 

@@ -39,12 +39,16 @@ public class TestCarSteer : MonoBehaviour
     [SerializeField] private TextMeshProUGUI inBoundary;
     public float valueX;
     public float currentTimeScale;
-    public float hitLength;
-    [SerializeField, Range(0.0f, 100.0f)] private float lengthTest;
-
+    public float currentDistance = 0;
+    [Space]
+    public int functionCounter = 0;
+    public int functionEndCounter = 0;
+    public float gameTimeScale;
 
     private void Start()
     {
+        //Time.timeScale = 0.5f;
+
         carEngine = GetComponent<CarEngine>();
         rb = GetComponent<Rigidbody>();
 
@@ -53,7 +57,7 @@ public class TestCarSteer : MonoBehaviour
         speedAllowance.max = 30.0f;
         speedAllowance.min = 10.0f;
         distanceAllowance.max = 80.0f;
-        distanceAllowance.min = 15.0f;
+        distanceAllowance.min = 0.0f;
 
         driverSpeedFuzzy.InitFuzzySystem(distanceAllowance, speedAllowance);
 
@@ -62,21 +66,24 @@ public class TestCarSteer : MonoBehaviour
 
     private void UpdateSpeed()
     {
-        float currentDistance = CheckDistance();
+
+        gameTimeScale = Time.timeScale;
+
+        CheckDistance(ref currentDistance);
         float currentSpeed = rb.velocity.magnitude;
 
         //if(currentSpeed < speedAllowance.min) currentSpeed = speedAllowance.min;
         //if(currentDistance < distanceAllowance.min) currentDistance = distanceAllowance.min;
-
-        lengthTest = currentDistance;
 
         currentSpeed = Mathf.Clamp(currentSpeed, speedAllowance.min, speedAllowance.max);   
         currentDistance = Mathf.Clamp(currentDistance, distanceAllowance.min, distanceAllowance.max);
 
         driverSpeedFuzzy.Process(ref speedAdjustment, currentSpeed, currentDistance);
 
+        acceleration = 1.0f;
 
-        switch(speedAdjustment)
+
+        switch (speedAdjustment)
         {
             case SpeedAdjust.FloorIt:
 
@@ -143,49 +150,77 @@ public class TestCarSteer : MonoBehaviour
             Vector3 localTarget = rb.transform.InverseTransformPoint(pathTracker.transform.position);
             float targetAngle = Mathf.Atan2(localTarget.x, localTarget.z) * Mathf.Rad2Deg;
 
-            if (!DriverParalleToTracker(pathTracker.transform.right))
+            //steer = Mathf.Clamp(targetAngle * steerSensitivity * 0.6f, -1, 1) * Mathf.Sign(rb.velocity.magnitude);
+
+            if(!DriverParalleToTracker(pathTracker.transform.right) || !DriverIsWithinBoundary())
             {
-                //Steer(ref steer, steerSensitivity);
                 steer = Mathf.Clamp(targetAngle * steerSensitivity * 0.6f, -1, 1) * Mathf.Sign(rb.velocity.magnitude);
             }
             else
             {
-                if (DriverIsWithinBoundary())
-                {
-
-                    //Vector3 newTarget = new Vector3(pathTracker.transform.position.x,
-                    //                                transform.position.y,
-                    //                                pathTracker.transform.position.z);
-
-                    //Vector3 newLocalTarget = rb.transform.InverseTransformPoint(newTarget);
-                    //float angle = Mathf.Atan2(newTarget.x, newTarget.z) * Mathf.Rad2Deg;
-
-                    //steer = Mathf.Clamp(angle * steerSensitivity, -1, 1) * Mathf.Sign(rb.velocity.magnitude);
-
-                    if (Mathf.Abs(steer) > 0.1)
-                    {
-                        if (steer > 0)
-                        {
-                            steer -= steerSensitivity;
-                        }
-                        else if (steer < 0)
-                        {
-                            steer += steerSensitivity;
-                        }
-                    }
-                    else
-                    {
-                        steer = 0.0f;
-                    }
-                }
-                else
-                {
-                    //Steer(ref steer, steerSensitivity);
-                    steer = Mathf.Clamp(targetAngle * steerSensitivity, -1, 1) * Mathf.Sign(rb.velocity.magnitude);
-                }
-
-
+                 if (Mathf.Abs(steer) > 0.1)
+                 {
+                     if (steer > 0)
+                     {
+                         steer -= steerSensitivity;
+                     }
+                     else if (steer < 0)
+                     {
+                         steer += steerSensitivity;
+                     }
+                 }
+                 else
+                 {
+                     steer = 0.0f;
+                 }
             }
+
+            #region Old Method
+            //if (!DriverParalleToTracker(pathTracker.transform.right))
+            //{
+            //    //Steer(ref steer, steerSensitivity);
+            //    steer = Mathf.Clamp(targetAngle * steerSensitivity * 0.6f, -1, 1) * Mathf.Sign(rb.velocity.magnitude);
+            //}
+            //else
+            //{
+            //    if (DriverIsWithinBoundary())
+            //    {
+
+            //        //Vector3 newTarget = new Vector3(pathTracker.transform.position.x,
+            //        //                                transform.position.y,
+            //        //                                pathTracker.transform.position.z);
+
+            //        //Vector3 newLocalTarget = rb.transform.InverseTransformPoint(newTarget);
+            //        //float angle = Mathf.Atan2(newTarget.x, newTarget.z) * Mathf.Rad2Deg;
+
+            //        //steer = Mathf.Clamp(angle * steerSensitivity, -1, 1) * Mathf.Sign(rb.velocity.magnitude);
+
+            //        if (Mathf.Abs(steer) > 0.1)
+            //        {
+            //            if (steer > 0)
+            //            {
+            //                steer -= steerSensitivity;
+            //            }
+            //            else if (steer < 0)
+            //            {
+            //                steer += steerSensitivity;
+            //            }
+            //        }
+            //        else
+            //        {
+            //            steer = 0.0f;
+            //        }
+            //    }
+            //    else
+            //    {
+            //        //Steer(ref steer, steerSensitivity);
+            //        steer = Mathf.Clamp(targetAngle * steerSensitivity, -1, 1) * Mathf.Sign(rb.velocity.magnitude);
+            //    }
+
+
+            //}
+            #endregion
+
             carEngine.Move(acceleration, brake, steer);
         }
 
@@ -201,7 +236,7 @@ public class TestCarSteer : MonoBehaviour
 
         float dot = Vector3.Dot(transform.right, targetRight);
 
-        return (dot > 0.95f);
+        return (dot > 0.98f);
     }
 
 
@@ -268,7 +303,7 @@ public class TestCarSteer : MonoBehaviour
 
 
         //CheckDistance();
-        Debug.DrawRay(transform.position + (transform.up * 0.5f), transform.forward * lengthTest, Color.blue);
+        //fDebug.DrawRay(transform.position + (transform.up * 0.5f), transform.forward * lengthTest, Color.blue);
     }
 
 
@@ -286,68 +321,92 @@ public class TestCarSteer : MonoBehaviour
     }
 
 
-    private float CheckDistance()
+    private float CheckDistance(ref float useDistance)
     {
-        RaycastHit hit;
-        float useDistance = 0.0f;
-        float computeDistance = 0.0f;
+        //RaycastHit hit;
+        //float useDistance = 0.0f;
+        float computeDistance1 = 0.0f;
+        int computeLevel1 = 0;
+
+        //float computeDistance2 = 0.0f;
+        //int computeLevel2 = 0;
 
         Vector3[] checkPoints = new Vector3[2];
 
-        checkPoints[0] = transform.position + (transform.up * 0.5f);
-        checkPoints[1] = transform.position + transform.up;
+        //checkPoints[0] = transform.position + (transform.up * 0.5f);
+        checkPoints[0] = transform.position + (transform.up * 2.0f);
 
-        foreach (var point in checkPoints)
-        {
-            if(Physics.Raycast(point, transform.forward, out hit, Mathf.Infinity))
-            {
-                passing = true;
-                if(hit.transform.CompareTag("Wall"))
-                {
-                    Debug.DrawRay(point, transform.forward, Color.green);
-                    computeDistance = hit.distance;
-                }
-                else if (hit.transform.CompareTag("Track"))
-                {
-                    Vector3 incomingVec = hit.point - point;
-                    Vector3 reflectVec = Vector3.Reflect(incomingVec, hit.normal);
+        Vector3 directionToTarget = pathTracker.transform.position - transform.position;
+        directionToTarget.Normalize();
 
-                    Debug.DrawLine(point, hit.point, Color.yellow);
-                    Vector3 newPoint = hit.point;
-                    if(Physics.Raycast(newPoint, reflectVec.normalized, out hit, Mathf.Infinity))
-                    {
-                        Debug.DrawLine(newPoint, hit.point, Color.magenta);
-                        if(hit.transform.CompareTag("Wall"))
-                        {
-                            computeDistance = Vector3.Distance(transform.position, hit.point);
-                        }
-                    }
-                    else
-                    {
-                        computeDistance = (hit.distance * 2f);
-                    }
-                }
-            }
-            
-            if(computeDistance > useDistance)
-                useDistance = computeDistance;
-        }
+        Vector3 useDirection = pathTracker.transform.forward;
 
+        computeDistance1 = ComputeDistance(out computeLevel1, checkPoints[0], useDirection);
+        //computeDistance2 = ComputeDistance(out computeLevel2, checkPoints[1], transform.forward);
+
+        //if(computeLevel1 < computeLevel2)
+        //    useDistance = computeDistance1;
+
+        //if(computeLevel2 < computeLevel1)
+        //    useDistance = computeDistance2;
+
+        //if(computeLevel1 ==  computeLevel2)
+        //{
+        //    useDistance = computeDistance1;
+        //    if (useDistance < computeDistance2)
+        //        useDistance = computeDistance2;
+        //}
+
+        useDistance = computeDistance1;
+         
         return useDistance;
     }
 
-    private void Test(out RaycastHit hit, Vector3 start, Vector3 dir)
+    private float ComputeDistance(out int objLevel, Vector3 start, Vector3 dir)
     {
-        bool gotHit = false;
+        RaycastHit hit;
 
-        if (Physics.Raycast(start, dir, out hit, Mathf.Infinity))
+
+        //TO-Do: should be directionn to the target / tracker 
+        // But problem  will arise when the car is travelling too fats than the tracker 
+
+
+        if(Physics.Raycast(start, dir, out hit, Mathf.Infinity))
         {
-            if (hit.transform.CompareTag("Wall"))
+            Debug.DrawRay(start, dir * hit.distance, Color.green);
+            if(hit.transform.CompareTag("Wall"))
             {
-                gotHit = true;
+                objLevel = 0;
+                return hit.distance;
+            }
+
+            if(hit.transform.CompareTag("Track"))
+            {
+                Vector3 incomingVec = hit.point - start;
+                Vector3 reflectVec = Vector3.Reflect(incomingVec, hit.normal);
+
+                float caputureDistance = hit.distance;
+                Debug.DrawRay(hit.point, reflectVec.normalized * hit.distance, Color.magenta);
+                if(Physics.Raycast(hit.point, reflectVec.normalized, out hit, Mathf.Infinity))
+                {
+                    objLevel = 1;
+
+                    if(hit.transform.CompareTag("Wall"))
+                    {
+                        return Vector3.Distance(transform.position, hit.point); 
+                    }
+                    else 
+                        return (caputureDistance * 2.0f);
+                }
+                else
+                {
+                    objLevel = 3;
+                    return (caputureDistance * 2.0f);
+                }
             }
         }
 
-        Debug.DrawRay(start, dir * hit.distance, (gotHit) ? Color.red : Color.green);
+        objLevel = 4;
+        return 0;   
     }
 }

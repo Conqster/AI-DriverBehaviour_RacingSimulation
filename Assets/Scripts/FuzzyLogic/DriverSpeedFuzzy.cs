@@ -149,9 +149,9 @@ public class DriverSpeedFuzzy : MonoBehaviour
         int? speedAdjustIndex = 0;
 
         if (disRuleSet.big && speedRuleSet.small) speedAdjustIndex = 0;
-        if ((disRuleSet.big && speedRuleSet.medium) || (disRuleSet.medium && speedRuleSet.small)) speedAdjustIndex = 1;
-        if ((disRuleSet.big && speedRuleSet.big) || (disRuleSet.medium && speedRuleSet.medium)
-                                                || (disRuleSet.small && speedRuleSet.small)) speedAdjustIndex = 2;
+        if ((disRuleSet.big && speedRuleSet.medium) || (disRuleSet.medium && speedRuleSet.small)
+                                                || (disRuleSet.small && speedRuleSet.small)) speedAdjustIndex = 1;
+        if ((disRuleSet.big && speedRuleSet.big) || (disRuleSet.medium && speedRuleSet.medium)) speedAdjustIndex = 2;
         if ((disRuleSet.medium && speedRuleSet.big) || (disRuleSet.small && speedRuleSet.medium)) speedAdjustIndex = 3;
         if (disRuleSet.small && speedRuleSet.big) speedAdjustIndex = 4;
 
