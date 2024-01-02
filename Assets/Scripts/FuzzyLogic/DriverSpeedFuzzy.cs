@@ -55,11 +55,6 @@ public class DriverSpeedFuzzy : MonoBehaviour
         speedAllowance = speedAllow;
     }
 
-    public void Process(ref SpeedAdjust speedAdjust, DistanceAllowance distAllow, SpeedAllowance speedAllow)
-    {
-        Fuzzification(ref distanceRating, ref speedRating, fuzzinessUtilityData.distanceFuzziness, fuzzinessUtilityData.speedFuzziness);
-        speedAdjust = speedAdjustment;
-    }
 
     public void Process(ref SpeedAdjust speedAdjust, float speed, float distance)
     {
@@ -74,9 +69,11 @@ public class DriverSpeedFuzzy : MonoBehaviour
     {
         //Fuzzification(ref distanceRating, ref speedRating, fuzzinessUtilityData.distanceFuzziness, fuzzinessUtilityData.speedFuzziness);
     }
-
-
-
+    public void Process(ref SpeedAdjust speedAdjust, DistanceAllowance distAllow, SpeedAllowance speedAllow)
+    {
+        Fuzzification(ref distanceRating, ref speedRating, fuzzinessUtilityData.distanceFuzziness, fuzzinessUtilityData.speedFuzziness);
+        speedAdjust = speedAdjustment;
+    }
 
     private void Fuzzification(ref DecisionRating distanceRate, ref DecisionRating speedRate, FuzzinessDegree distanceFuzziness, FuzzinessDegree speedFuzziness)
     {

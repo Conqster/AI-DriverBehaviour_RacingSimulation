@@ -150,4 +150,5 @@ public class ObstacleAvoidance : MonoBehaviour
 
         brakingIntensity = Mathf.Clamp01(brakingIntensity);
     }
+
 }
