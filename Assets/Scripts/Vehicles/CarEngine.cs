@@ -47,6 +47,12 @@ namespace Car
         private float steerAngle;
         private float currentMotorTorque;
 
+        private bool running = false;
+        public bool Running
+        {
+            get { return running; }
+        }
+
         public WheelCollider[] WheelCollider
         {
             get { return wheelCollider; }   
@@ -78,15 +84,15 @@ namespace Car
                 maxSpeedAttained = currentSpeed;
             }
 
-            float v = Input.GetAxis("Vertical");
-            float h = Input.GetAxis("Horizontal");
-            float b = (Input.GetKey(KeyCode.Space)) ? 1.0f : 0.0f;
-            driveNow = v;
+            //float v = Input.GetAxis("Vertical");
+            //float h = Input.GetAxis("Horizontal");
+            //float b = (Input.GetKey(KeyCode.Space)) ? 1.0f : 0.0f;
+            //driveNow = v;
             
-            if(Mathf.Abs(v) > 0 || Mathf.Abs(h) > 0)
-            {
-                Move(v, b, h);
-            }
+            //if(Mathf.Abs(v) > 0 || Mathf.Abs(h) > 0)
+            //{
+            //    Move(v, b, h);
+            //}
 
            if(rb.velocity.magnitude > 0)
             {
@@ -132,6 +138,8 @@ namespace Car
                     brakeLight.SetActive(false);
                 }
             }
+
+            running = (acceleration != 0 || brake != 0 || steer != 0);
 
         }
 
@@ -289,26 +297,7 @@ namespace Car
             return wheelCollider[0].steerAngle;
         }
 
-        public bool CheckAllWheelsOnGround(ref Transform targetHit, Transform ground)
-        {
-            WheelHit groundHit;
-
-            foreach (WheelCollider wheelCollider in wheelCollider)
-            {
-                if(wheelCollider.GetGroundHit(out groundHit))
-                {
-                    targetHit = groundHit.collider.transform;
-                    if(groundHit.collider.transform != ground)
-                    {
-                        return false;
-                    }
-                }
-            }
-
-            return true;
-        }
-
-        public bool QuickFix()
+        public bool WheelOnGround()
         {
             foreach (WheelCollider wheelCollider in wheelCollider)
             {
@@ -318,6 +307,8 @@ namespace Car
 
             return true;
         }
+
+
 
     }
 

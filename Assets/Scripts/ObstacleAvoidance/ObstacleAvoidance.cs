@@ -118,7 +118,7 @@ public class ObstacleAvoidance : MonoBehaviour
 
 
 
-    private bool ObstacleDetection(Vector3 start, Vector3 dir, out RaycastHit hit, float range, string targetObstacleTag = "Obstacle")
+    public bool ObstacleDetection(Vector3 start, Vector3 dir, out RaycastHit hit, float range, string targetObstacleTag = "Obstacle")
     {
         bool detect = false;
         if (Physics.Raycast(start, dir, out hit, range))
@@ -130,7 +130,6 @@ public class ObstacleAvoidance : MonoBehaviour
         }
         return detect;
     }
-
 
     private int SweepCheck(float range, float angle)
     {

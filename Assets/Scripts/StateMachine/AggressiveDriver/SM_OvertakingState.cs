@@ -10,9 +10,16 @@ public struct OvertakingInfo
 {
     public Transform opponentTransform;
     public Rigidbody opponentRb;
+
+    public Vector3 milestone1;
+    public Vector3 milestone2;
+    public Vector3 milestone3;
+    public Vector3 milestone4;
+
     public Ghost overtakeGhost;
     public Ghost potentialGoal;
     public Ghost initialGoal;
+
     public Vector3 initialWaypoint; //keeps track of waypoint
 }
 
@@ -168,7 +175,7 @@ public class SM_OvertakingState : StateMachine
 
 
 
-    private bool UpdateGoal(ref Vector3 goal)
+    private bool UpdateGoalOld(ref Vector3 goal)
     {
         Vector3 forward = sm_driver.transform.TransformDirection(sm_driver.transform.forward);
 
@@ -218,6 +225,50 @@ public class SM_OvertakingState : StateMachine
     }
 
 
+    private bool UpdateGoal(ref Vector3 goal)
+    {
+        Vector3 forward = sm_driver.transform.TransformDirection(sm_driver.transform.forward);
+
+
+        Vector3 toOther = overtakingData.milestone1 - sm_driver.transform.position;
+        if (Vector3.Dot(forward, toOther) > 0)
+        {
+            goal = overtakingData.milestone1;
+
+            //FOR DEBUGGING PURPOSES
+            //sm_driver.currentTargetInfo = overtakingData.initialGoal.obj.transform;
+            return true;
+        }
+        
+
+        toOther = overtakingData.milestone2 - sm_driver.transform.position;
+        if (Vector3.Dot(forward, toOther) > 0)
+        {
+            goal = overtakingData.milestone2;
+
+            //FOR DEBUGGING PURPOSES
+            //sm_driver.currentTargetInfo = overtakingData.potentialGoal.obj.transform;
+            return true;
+        }
+        
+
+        toOther = overtakingData.milestone3 - sm_driver.transform.position;
+        if (Vector3.Dot(forward, toOther) > 0)
+        {
+            goal = overtakingData.milestone3;
+
+
+            //FOR DEBUGGING PURPOSES
+            //sm_driver.currentTargetInfo = overtakingData.overtakeGhost.obj.transform;
+            return true;
+        }
+        
+
+
+
+        return false;
+    }
+
     /// <summary>
     ///check if overtaking is successful 
     /// </summary>
@@ -254,6 +305,10 @@ public class SM_OvertakingState : StateMachine
 
         return false;
     }
+
+
+
+
 
 
     private void BeCaution(ref float brake, ref float acc)

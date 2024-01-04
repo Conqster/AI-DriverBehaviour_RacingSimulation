@@ -1,7 +1,11 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.InputSystem.HID;
+using UnityEngine.UIElements;
+using static UnityEngine.GraphicsBuffer;
 
 public class SM_NormalState : StateMachine
 {
@@ -18,6 +22,8 @@ public class SM_NormalState : StateMachine
     private bool wantToOverTake = false;
     private float tryOvertakeCoolDown = 5.0f; // probably going to bring out to sm_driver 
     //because this would delay overtaking if possible at start f
+
+    private Rigidbody overtakeOpponent;
 
     public SM_NormalState(DriverData driver) : base(driver)
     {
@@ -66,8 +72,9 @@ public class SM_NormalState : StateMachine
         {
             //Time.timeScale = 0.3f;
 
-            if(target == null)
-                return;
+            //if (target == null)
+            //    return; //bad because its get outcompletly from the function
+
 
             Vector3 right = sm_driver.transform.TransformDirection(sm_driver.transform.right);
             Vector3 toOther = target.transform.position - sm_driver.transform.position;
@@ -98,7 +105,7 @@ public class SM_NormalState : StateMachine
         ///there is a potential to overtake 
         ///If there is opening for overtaking factors 
         tryOvertakeCoolDown -= Time.deltaTime;
-        if (PotentialToOvertake())
+        if (PotentialToOvertake(ref overtakeOpponent))
         {
             TriggerExit(new SM_OvertakingState(sm_driver, new OvertakingInfo()));
             //Debug.Log("Trying to overtake");
@@ -122,7 +129,7 @@ public class SM_NormalState : StateMachine
 
         if(wantToOverTake)
         {
-            if(TryOvertaking(out OvertakingInfo info))
+            if(TryOvertaking(out OvertakingInfo info, overtakeOpponent))
             {
                 TriggerExit(new SM_OvertakingState(sm_driver, info));
                 //Debug.Log("NOW NOW DAMN IT!!!!!");
@@ -217,7 +224,7 @@ public class SM_NormalState : StateMachine
     /// Later change to using the degree of true
     /// </summary>
     /// <returns></returns>
-    private bool PotentialToOvertake()
+    private bool PotentialToOvertakeOld()
     {
         ///current speed against opponent speed 
         ///distance to opponent
@@ -272,13 +279,105 @@ public class SM_NormalState : StateMachine
     }
 
 
+    private bool PotentialToOvertake(ref Rigidbody overtakeTarget)
+    {
+
+        //TO-DO: get the info of the car wanting to overtake
+        //more dominant side for overtaking 
+        //width to target for overtaking
+        //distance to next corner 
+
+        RaycastHit hit;
+        //Rigidbody target;
+
+        overtakeTarget = GetOvertakingOpponent();
+
+        if(overtakeTarget != null)
+        {
+            //dominant side 
+            Vector3 opponentCenterMass = overtakeTarget.transform.position + (Vector3.up * 0.5f);
+
+            RaycastHit leftSideHit, rightSideHit;
+
+            bool dominantLeft = sm_driver.obstacleAvoidance.ObstacleDetection(opponentCenterMass, -overtakeTarget.transform.right, out leftSideHit, Mathf.Infinity, "Wall");
+            bool dominantRight = sm_driver.obstacleAvoidance.ObstacleDetection(opponentCenterMass, overtakeTarget.transform.right, out rightSideHit, Mathf.Infinity, "Wall");
+
+            int dominantSide = 0;
+
+            dominantSide = (dominantLeft) ? -1 : 0;
+            dominantSide = (dominantRight) ? 1 : 0;
+
+            if (dominantLeft && dominantRight)
+            {
+                if (leftSideHit.distance > rightSideHit.distance)
+                    dominantSide = -1;
+                else
+                    dominantSide = 1;
+            }
+
+
+
+            #region prepare Overtake
+            //distance to next corner 
+            float distance = 0;
+            Vector3 origin = sm_driver.transform.position + (Vector3.up * 2.0f);
+
+            //sm_driver.obstacleAvoidance.ObstacleDetection(origin, sm_driver.transform.forward, out hit, Mathf.Infinity, "Wall");
+
+            //distance = hit.distance;
+
+            UpdateDistanceToCorner(ref distance, origin, sm_driver.transform.forward, true);
+            //Debug.DrawLine(origin, sm_driver.transform.forward * distance, Color.magenta, 10.0f);
+
+
+            //length of about four cars
+            //float minimumCornerDistanceOvertake = 19.0f;
+            float minimumCornerDistanceOvertake = 25.0f;
+
+            if (distance > minimumCornerDistanceOvertake)
+            {
+                Debug.Log("Distance To Corner: " + distance);
+                return true;
+            }
+            #endregion
+        }
+
+
+
+        return false;
+    }
+
+
+    private Rigidbody GetOvertakingOpponent()
+    {
+        RaycastHit opponentHit;
+
+        Vector3 origin = sm_driver.transform.position +
+           new Vector3(0.0f, sm_driver.raycastUpOffset, 0.0f);
+
+        Vector3 leftWhiskey = origin - (sm_driver.transform.right);
+        Vector3 rightWhiskey = origin + (sm_driver.transform.right);
+
+        if(sm_driver.obstacleAvoidance.ObstacleDetection(origin, sm_driver.transform.forward, out opponentHit, sm_driver.rayLength, "Vehicle"))
+        return opponentHit.rigidbody;
+
+        if(sm_driver.obstacleAvoidance.ObstacleDetection(leftWhiskey, sm_driver.transform.forward, out opponentHit, sm_driver.rayLength, "Vehicle"))
+        return opponentHit.rigidbody;
+
+        if(sm_driver.obstacleAvoidance.ObstacleDetection(rightWhiskey, sm_driver.transform.forward, out opponentHit, sm_driver.rayLength, "Vehicle"))
+        return opponentHit.rigidbody;
+
+        return null;
+    }
+
+
     /// <summary>
     /// Try to get set/ready for overtake
     /// returns true/false if achievable
     /// </summary>
     /// <param name="info"></param>
     /// <returns></returns>
-    private bool TryOvertaking(out OvertakingInfo info)
+    private bool TryOvertakingOld(out OvertakingInfo info)
     {
         info = new OvertakingInfo();
 
@@ -386,5 +485,97 @@ public class SM_NormalState : StateMachine
 
 
 
-    
+    private bool TryOvertaking(out OvertakingInfo info, Rigidbody opponent)
+    {
+        info = new OvertakingInfo();
+
+        if (opponent != null)
+        {
+            //dominant side 
+            Vector3 opponentCenterMass = opponent.transform.position + (Vector3.up * 0.5f);
+
+            RaycastHit leftSideHit, rightSideHit;
+
+            bool dominantLeft = sm_driver.obstacleAvoidance.ObstacleDetection(opponentCenterMass, -opponent.transform.right, out leftSideHit, Mathf.Infinity, "Wall");
+            bool dominantRight = sm_driver.obstacleAvoidance.ObstacleDetection(opponentCenterMass, opponent.transform.right, out rightSideHit, Mathf.Infinity, "Wall");
+
+            int dominantSide = 0;
+
+            dominantSide = (dominantLeft) ? -1 : 0;
+            dominantSide = (dominantRight) ? 1 : 0;
+
+            if (dominantLeft && dominantRight)
+            {
+                if (leftSideHit.distance > rightSideHit.distance)
+                    dominantSide = -1;
+                else
+                    dominantSide = 1;
+            }
+
+            //check my side to the opponent 
+            Vector3 right = sm_driver.transform.TransformDirection(opponent.transform.right);
+            Vector3 toOther = opponent.position - sm_driver.transform.position;
+
+            Vector3 localTarget = sm_driver.transform.InverseTransformPoint(opponent.transform.position);
+            float angle = Mathf.Atan2(localTarget.x, localTarget.z) * Mathf.Rad2Deg;
+
+            int angleDirOpponentSide = (angle >  0) ? 1 : -1;
+
+            if(angleDirOpponentSide == dominantSide)
+            {
+                //meaning driver have to turn towards opponent to overtake
+                //which could be bad 
+
+                if(angle > 5.0f)  //should be able to make it under 20 degrees
+                    return false;
+
+                //for now return later, perform a calcul;ation to repath a overatking
+            }
+
+
+
+            //heavy steer in the overtake direction
+            sm_driver.engine.Move(accelerate, 0.0f, dominantSide);
+
+
+            //then i can overtake
+            Vector3 overtakeMilestone1 = Vector3.zero;
+            float widthOfAVehicle = 4.0f;
+
+            overtakeMilestone1 = opponent.position + (opponent.transform.right * dominantSide * widthOfAVehicle);
+
+
+            //update info
+            info.opponentRb = opponent;
+            //REGISTER CURRENT WAYPOINT IN OVERTAKINGDATA
+            info.initialWaypoint = sm_driver.currentWaypoint.position;
+
+            info.milestone1 = overtakeMilestone1;
+            float intervalsBtwMilestones = 10.0f;
+            //info.milestone2 = overtakeMilestone1 + (opponent.transform.transform.forward * intervalsBtwMilestones);
+            //info.milestone3 = overtakeMilestone1 + ((opponent.transform.transform.forward * intervalsBtwMilestones) * 2.0f);
+
+            Vector3 directionToTarget = sm_driver.currentTarget - sm_driver.transform.position;
+            directionToTarget.Normalize();
+
+            info.milestone2 = overtakeMilestone1 + (directionToTarget * intervalsBtwMilestones);
+            info.milestone3 = overtakeMilestone1 + ((directionToTarget * intervalsBtwMilestones) * 2.0f);
+
+            Vector3 copyCurrentPos = sm_driver.transform.position;
+
+            //Time.timeScale = 0.1f;
+            //Debug.Log("Using timeScale");
+
+            Debug.DrawLine(copyCurrentPos, info.milestone1, Color.cyan, 10.0f);
+            Debug.DrawLine(info.milestone1, info.milestone2, Color.cyan, 10.0f);
+            Debug.DrawLine(info.milestone2, info.milestone3, Color.cyan, 10.0f);
+            return true;
+        }
+        else
+            return false;
+
+    }
+
+
+
 }

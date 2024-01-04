@@ -5,57 +5,72 @@ using Car;
 
 public class CarGrounded : MonoBehaviour
 {
-    public CarEngine carEngine;
+    private CarEngine carEngine;
 
-    public Transform targetHit;
-    public Transform objectHit;
 
     [SerializeField, Range(0.0f, 10.0f)] private float maxTimeOffGround = 5.0f;
+    [SerializeField, Range(0.0f, 10.0f)] private float maxTimeStuck = 6.0f;
     public float timeOffGround = 0.0f;
-    public bool needToFlip = false;
-    public bool quickFixNotOnGround = false;
+    public float timeStuck = 0.0f;  
+    private bool needToFlip = false;
 
-    public Transform currentBodyHit;
+    private bool isGrounded = false;
+
+    public bool carIsRunning = false;  
+
+    public bool NeedToFlip
+    {
+        get { return needToFlip; }
+    }
+
+    private Rigidbody rb;
 
     private void Start()
     {
         carEngine = GetComponent<CarEngine>();
-        targetHit = GameObject.FindGameObjectWithTag("Track").GetComponent<Transform>();
+        rb = GetComponent<Rigidbody>();
     }
 
 
     private void Update()
     {
-        CheckWheels();
-        quickFixNotOnGround = carEngine.QuickFix();
-    }
+        carIsRunning = carEngine.Running;
 
+        isGrounded = carEngine.WheelOnGround();
 
-    private void CheckWheels()
-    {
-        if (!carEngine.CheckAllWheelsOnGround(ref objectHit, targetHit))
+        if(carIsRunning)
         {
-            timeOffGround += Time.deltaTime;
+
+            if (!isGrounded)
+            {
+                timeOffGround += Time.deltaTime;
+            }
+            else
+                timeOffGround = 0.0f;
+
+            if (rb.velocity.magnitude < 0.1f)
+                timeStuck += Time.deltaTime;
+            else
+                timeStuck = 0.0f;
+
         }
-        else
-            timeOffGround = 0.0f;
 
 
-        needToFlip = (timeOffGround > maxTimeOffGround);
-           
+        needToFlip = (timeOffGround > maxTimeOffGround || timeStuck > maxTimeStuck);
 
     }
 
 
-    private void OnCollisionStay(Collision collision)
+    public void Flip(Vector3 targetAhead)
     {
-        timeOffGround += Time.deltaTime;
-        currentBodyHit = collision.transform;
-    }
+        timeOffGround = 0.0f;
+        timeStuck = 0.0f;
 
-    private void OnCollisionExit(Collision collision)
-    {
-        //timeOffGround = 0;
+        float distToTarget = Vector3.Distance(transform.position, targetAhead); 
+
+        transform.position = new Vector3(transform.position.x, transform.position.y + 1.0f, transform.position.z);
+
+        transform.LookAt(targetAhead);
     }
 
 }

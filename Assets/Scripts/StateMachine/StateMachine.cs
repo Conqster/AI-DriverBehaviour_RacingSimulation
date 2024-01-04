@@ -32,7 +32,7 @@ public class DriverData
     [SerializeField] public bool goBerserk = false;
     [SerializeField] public bool testState = false;
     [SerializeField, Range(0.0f, 5.0f)] public float raycastUpOffset = 1.0f;
-    [SerializeField, Range(0.0f, 15.0f)] public float rayLength = 15.0f;
+    [SerializeField, Range(0.0f, 25.0f)] public float rayLength = 15.0f;
     public Vector3 currentTarget;
     public Transform currentWaypoint = null;
     public WhiskeySearchType behindRayType = WhiskeySearchType.CentralRayWithWhiskey;
@@ -121,6 +121,8 @@ public class StateMachine
     protected DriverSpeedFuzzy driverSpeedFuzzy;
     protected bool useFuzzySystem = false;
 
+    private CarGrounded carGrounded;
+
     public StateMachine(DriverData driver)
     {
         sm_name = "Base State";
@@ -129,6 +131,7 @@ public class StateMachine
         sm_duration = 0.0f;
 
         driverSpeedFuzzy = driver.transform.GetComponent<DriverSpeedFuzzy>();
+        carGrounded = driver.transform.GetComponent<CarGrounded>();
     }
     
     
@@ -183,6 +186,10 @@ public class StateMachine
 
         if(useFuzzySystem)
             UpdateSpeed();
+
+        if (carGrounded.NeedToFlip)
+            carGrounded.Flip(sm_driver.currentTarget);
+        
 
         sm_driver.brakeTest = brake;
 
@@ -425,6 +432,8 @@ public class StateMachine
                 break;
         }
 
+        if (opponentRb == null)
+            return false;
 
         return midCheck || rightCheck || leftCheck;
     }
@@ -451,7 +460,14 @@ public class StateMachine
     private void UpdateSpeed()
     {
         float currentDistance = 0;
-        UpdateDistanceToCorner(ref currentDistance);
+
+        Vector3 checkFrom = sm_driver.transform.position + (sm_driver.transform.up * 2.0f);
+
+        Vector3 directionToTarget = sm_driver.currentTarget - sm_driver.transform.position;
+        directionToTarget.Normalize();
+
+
+        UpdateDistanceToCorner(ref currentDistance, checkFrom, directionToTarget);
         float currentSpeed = sm_driver.rb.velocity.magnitude;
 
         currentSpeed = Mathf.Clamp(currentSpeed, speedAllowance.min, speedAllowance.max);
@@ -496,31 +512,32 @@ public class StateMachine
 
     }
 
-    protected void UpdateDistanceToCorner(ref float useDistance)
+    protected void UpdateDistanceToCorner(ref float useDistance, Vector3 start, Vector3 dir, bool debugRay = false)
     {
-        Vector3 checkFrom = sm_driver.transform.position + (sm_driver.transform.up * 2.0f);
-
-        Vector3 directionToTarget = sm_driver.currentTarget - sm_driver.transform.position;
-        directionToTarget.Normalize();
 
         RaycastHit hit;
 
-        if(Physics.Raycast(checkFrom, directionToTarget, out hit, Mathf.Infinity))
+        if(Physics.Raycast(start, dir, out hit, Mathf.Infinity))
         {
-            Debug.DrawRay(checkFrom, directionToTarget * hit.distance, Color.green);
+            Debug.DrawRay(start, dir * hit.distance, Color.green);
             if(hit.transform.CompareTag("Wall"))
             {
                 useDistance = hit.distance;
+                if (debugRay)
+                    Debug.DrawRay(start, dir * hit.distance, Color.magenta, 10.0f);
                 return;
             }
 
             if(hit.transform.CompareTag("Track"))
             {
-                Vector3 incomingVec = hit.point - checkFrom;
+                Vector3 incomingVec = hit.point - start;
                 Vector3 reflectVec = Vector3.Reflect(incomingVec, hit.normal);
 
                 float caputureDistance = hit.distance;
                 Debug.DrawRay(hit.point, reflectVec.normalized * hit.distance, Color.magenta);
+
+                if(debugRay)
+                    Debug.DrawRay(hit.point, reflectVec.normalized * hit.distance, Color.red, 10.0f);
 
                 if(Physics.Raycast(hit.point, reflectVec.normalized, out hit, Mathf.Infinity))
                 {
