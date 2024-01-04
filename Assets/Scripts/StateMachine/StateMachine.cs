@@ -257,6 +257,22 @@ public class StateMachine
             steer = Mathf.Clamp(targetAngle * currentSteerSensitity, -1, 1) * Mathf.Sign(sm_driver.rb.velocity.magnitude);    //problem sets the angle directly, so it creates a snapping pos rotation
             //float steer = 0.0f;
         }
+
+        if(sm_driver.obstacleAvoidance.VehicleSidePerception(out int targetSide, 5.0f, 20.0f))
+        {
+            //opposite side of target side hence (-targetSide) //hmm if 0;
+            steer += -targetSide * (sm_driver.steeringSensitivity * 100.0f);
+
+
+            lastObtacleTime = 0.0f;
+        }
+        else
+        {
+            AvoidedObstacle(ref currentSteerSensitity, sm_driver.steeringSensitivity);
+            //SteerToTarget(targetAngle, normalSteerIntensity * 10f, ref steer);
+            steer = Mathf.Clamp(targetAngle * currentSteerSensitity, -1, 1) * Mathf.Sign(sm_driver.rb.velocity.magnitude);    //problem sets the angle directly, so it creates a snapping pos rotation
+            //float steer = 0.0f;
+        }
         sm_driver.normalSteerIntensity = currentSteerSensitity;
 
         sm_driver.obstacleAvoidance.Perception(visionLength, visionAngle, sm_driver.steeringSensitivity * 100f, ref steer);
@@ -330,7 +346,7 @@ public class StateMachine
     /// <param name="steerIntensity"></param>
     private void AvoidedObstacle(ref float normalSteerIntensity, float steerIntensity)
     {
-        lastObtacleTime += Time.deltaTime;        // increases overtime last obstacle avioded 
+        lastObtacleTime += Time.deltaTime * 0.7f;        // increases overtime last obstacle avioded 
         float minIntensity = steerIntensity * 0.2f;
 
         normalSteerIntensity = Mathf.Lerp(minIntensity, steerIntensity, lastObtacleTime);

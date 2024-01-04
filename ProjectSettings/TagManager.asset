@@ -10,6 +10,7 @@ TagManager:
   - Vehicle
   - Wall
   - Track
+  - CarRear
   layers:
   - Default
   - TransparentFX

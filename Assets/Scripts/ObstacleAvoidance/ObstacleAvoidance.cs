@@ -23,6 +23,9 @@ public class ObstacleAvoidance : MonoBehaviour
     [SerializeField] private bool showDeepSweep = true;
     [SerializeField, Range(0.0f, 10.0f)] private float posOffset = 2.0f;
     private Vector3 position = Vector3.zero;
+    public Transform carRear;
+
+
 
 
     /// <summary>
@@ -37,9 +40,9 @@ public class ObstacleAvoidance : MonoBehaviour
         Vector3 leftPoint = (Quaternion.Euler(0, -visionAngle, 0) * transform.forward) * visionLength;
 
         RaycastHit hit;
-        bool midVision = ObstacleDetection(transform.forward, out hit, visionLength);
-        bool leftWhisker = ObstacleDetection(leftPoint, out hit, visionLength);
-        bool rightWhisker = ObstacleDetection(rightPoint, out hit, visionLength);
+        bool midVision = ObstacleDetection(transform.position, transform.forward, out hit, visionLength);
+        bool leftWhisker = ObstacleDetection(transform.position, leftPoint, out hit, visionLength);
+        bool rightWhisker = ObstacleDetection(transform.position, rightPoint, out hit, visionLength);
 
 
         if (leftWhisker)
@@ -62,9 +65,39 @@ public class ObstacleAvoidance : MonoBehaviour
             Debug.DrawRay(transform.position, leftPoint, (leftWhisker) ? Color.red : Color.blue);
             Debug.DrawRay(transform.position, rightPoint, (rightWhisker) ? Color.red : Color.blue);
         }
-
+        
     }
 
+
+    public bool VehicleSidePerception(out int side, float visionLength, float visionAngle)
+    {
+        if(carRear == null)
+        {
+            print("Get Car Rear Game Object");
+            side = 0;
+            return false;
+        }
+
+        Vector3 rightPoint = (Quaternion.Euler(0, visionAngle, 0) * transform.forward);
+        Vector3 leftPoint = (Quaternion.Euler(0, -visionAngle, 0) * transform.forward);
+
+        RaycastHit hit;
+        //bool midVision = ObstacleDetection(transform.forward, out hit, visionLength);
+        bool leftWhisker = ObstacleDetection(carRear.position, leftPoint, out hit, visionLength, "Vehicle");
+        bool rightWhisker = ObstacleDetection(carRear.position, rightPoint, out hit, visionLength, "Vehicle");
+
+        Debug.DrawRay(carRear.position, leftPoint * visionLength, (leftWhisker) ? Color.red : Color.blue);
+        Debug.DrawRay(carRear.position, rightPoint * visionLength, (rightWhisker) ? Color.red : Color.blue);
+
+        if (leftWhisker)
+            side = -1;
+        else if (rightWhisker)
+            side = 1;
+        else
+            side = 0;
+
+        return leftWhisker || rightWhisker;
+    }
 
     public bool DangerAhead(float visionLength, float visionAngle)
     {
@@ -73,9 +106,9 @@ public class ObstacleAvoidance : MonoBehaviour
         RaycastHit hit;
         Vector3 rightPoint = (Quaternion.Euler(0, visionAngle, 0) * transform.forward) * visionLength;
         Vector3 leftPoint = (Quaternion.Euler(0, -visionAngle, 0) * transform.forward) * visionLength;
-        danger = ObstacleDetection(transform.forward, out hit, visionLength) ||
-                 ObstacleDetection(leftPoint, out hit, visionLength) ||
-                 ObstacleDetection(rightPoint, out hit, visionLength);
+        danger = ObstacleDetection(transform.position, transform.forward, out hit, visionLength) ||
+                 ObstacleDetection(transform.position, leftPoint, out hit, visionLength) ||
+                 ObstacleDetection(transform.position, rightPoint, out hit, visionLength);
 
         //if (danger)
         //    print("There is an obstcale");
@@ -85,12 +118,12 @@ public class ObstacleAvoidance : MonoBehaviour
 
 
 
-    private bool ObstacleDetection(Vector3 dir, out RaycastHit hit, float range)
+    private bool ObstacleDetection(Vector3 start, Vector3 dir, out RaycastHit hit, float range, string targetObstacleTag = "Obstacle")
     {
         bool detect = false;
-        if (Physics.Raycast(transform.position, dir, out hit, range))
+        if (Physics.Raycast(start, dir, out hit, range))
         {
-            if (hit.collider.CompareTag("Obstacle"))
+            if (hit.collider.CompareTag(targetObstacleTag))
             {
                 detect = true;
             }
@@ -109,7 +142,7 @@ public class ObstacleAvoidance : MonoBehaviour
             //print(angleOffset);
             Vector3 whiskerCheck = (Quaternion.Euler(0.0f, angleOffset, 0.0f) * transform.forward) * range;
             RaycastHit hit;
-            bool whiskerHit = ObstacleDetection(whiskerCheck, out hit, range);
+            bool whiskerHit = ObstacleDetection(transform.position, whiskerCheck, out hit, range);
 
             if(whiskerHit)
             {
@@ -138,7 +171,7 @@ public class ObstacleAvoidance : MonoBehaviour
 
 
         RaycastHit hit;
-        bool midVision = ObstacleDetection(transform.forward, out hit, visionLength);
+        bool midVision = ObstacleDetection(transform.position, transform.forward, out hit, visionLength);
 
         if (midVision)
         {

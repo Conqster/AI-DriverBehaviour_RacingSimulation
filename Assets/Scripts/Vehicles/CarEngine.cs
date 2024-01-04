@@ -47,6 +47,11 @@ namespace Car
         private float steerAngle;
         private float currentMotorTorque;
 
+        public WheelCollider[] WheelCollider
+        {
+            get { return wheelCollider; }   
+        }
+
         private void Start()
         {
             //Time.timeScale = 0.2f;
@@ -282,6 +287,36 @@ namespace Car
         public float GetWheelSteerAngle()
         {
             return wheelCollider[0].steerAngle;
+        }
+
+        public bool CheckAllWheelsOnGround(ref Transform targetHit, Transform ground)
+        {
+            WheelHit groundHit;
+
+            foreach (WheelCollider wheelCollider in wheelCollider)
+            {
+                if(wheelCollider.GetGroundHit(out groundHit))
+                {
+                    targetHit = groundHit.collider.transform;
+                    if(groundHit.collider.transform != ground)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        public bool QuickFix()
+        {
+            foreach (WheelCollider wheelCollider in wheelCollider)
+            {
+                if(!wheelCollider.isGrounded)
+                    return false;
+            }
+
+            return true;
         }
 
     }
