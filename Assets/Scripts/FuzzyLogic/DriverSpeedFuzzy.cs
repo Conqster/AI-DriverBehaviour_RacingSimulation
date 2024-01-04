@@ -42,11 +42,16 @@ public class DriverSpeedFuzzy : MonoBehaviour
     [SerializeField] private SpeedAdjust speedAdjustment;
 
 
-    public void InitFuzzySystem(DistanceAllowance distAllow, SpeedAllowance speedAllow, FuzzinessUtilityData fuzzyData)
+    public bool InitFuzzySystem(DistanceAllowance distAllow, SpeedAllowance speedAllow, FuzzinessUtilityData fuzzyData)
     {
         distanceAllowance = distAllow;
         speedAllowance = speedAllow;
         fuzzinessUtilityData = fuzzyData;
+
+        if(fuzzinessUtilityData != null)
+            return true;
+
+        return false;
     }
 
     public void InitFuzzySystem(DistanceAllowance distAllow, SpeedAllowance speedAllow)
@@ -146,10 +151,14 @@ public class DriverSpeedFuzzy : MonoBehaviour
         int? speedAdjustIndex = 0;
 
         if (disRuleSet.big && speedRuleSet.small) speedAdjustIndex = 0;
+
         if ((disRuleSet.big && speedRuleSet.medium) || (disRuleSet.medium && speedRuleSet.small)
                                                 || (disRuleSet.small && speedRuleSet.small)) speedAdjustIndex = 1;
+
         if ((disRuleSet.big && speedRuleSet.big) || (disRuleSet.medium && speedRuleSet.medium)) speedAdjustIndex = 2;
+
         if ((disRuleSet.medium && speedRuleSet.big) || (disRuleSet.small && speedRuleSet.medium)) speedAdjustIndex = 3;
+        
         if (disRuleSet.small && speedRuleSet.big) speedAdjustIndex = 4;
 
         speedAdjustment = (SpeedAdjust)speedAdjustIndex;

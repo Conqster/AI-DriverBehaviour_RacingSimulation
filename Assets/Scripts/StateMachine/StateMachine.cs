@@ -1,5 +1,6 @@
 using Car;
 using System.ComponentModel;
+using Unity.VisualScripting;
 using UnityEngine;
 using static StateMachine;
 
@@ -35,6 +36,8 @@ public class DriverData
     public Vector3 currentTarget;
     public Transform currentWaypoint = null;
     public WhiskeySearchType behindRayType = WhiskeySearchType.CentralRayWithWhiskey;
+    public SpeedAdjust speedAdjust;
+    public FuzzinessUtilityData currentFuzzinessUtilityData;   //if having another create a sturct then split in Driver Data
 
     [Header("Debugger")]
     [SerializeField] public float targetAngle;
@@ -43,15 +46,17 @@ public class DriverData
     [SerializeField] public float currentDirection;
     [SerializeField] public float currentSteer;
     [SerializeField] public float normalSteerIntensity;
+    public float brakeTest;
 
 
-    public DriverData(CarEngine engine, Circuit circuit, Rigidbody rb, ObstacleAvoidance obstacleAvoidance, Transform transform)
+    public DriverData(CarEngine engine, Circuit circuit, Rigidbody rb, ObstacleAvoidance obstacleAvoidance, Transform transform, FuzzinessUtilityData fuzzinessUtilityData)
     {
         this.engine = engine;
         this.circuit = circuit;
         this.rb = rb;
-        this.obstacleAvoidance = obstacleAvoidance;
+        this.obstacleAvoidance = obstacleAvoidance;   //TO-DO: take out later, put into statemachine then retrieve and set through transform.getcom
         this.transform = transform;
+        currentFuzzinessUtilityData = fuzzinessUtilityData;   
     }
 }
 
@@ -111,6 +116,10 @@ public class StateMachine
     protected float brake;
     protected float steer;
 
+    protected SpeedAllowance speedAllowance;
+    protected DistanceAllowance distanceAllowance;
+    protected DriverSpeedFuzzy driverSpeedFuzzy;
+    protected bool useFuzzySystem = false;
 
     public StateMachine(DriverData driver)
     {
@@ -118,6 +127,8 @@ public class StateMachine
         sm_event = SM_Event.Enter;
         sm_driver = driver;
         sm_duration = 0.0f;
+
+        driverSpeedFuzzy = driver.transform.GetComponent<DriverSpeedFuzzy>();
     }
     
     
@@ -153,6 +164,8 @@ public class StateMachine
     protected virtual void Enter()
     {
         sm_duration = 0.0f;
+
+
         //after all logic as be performed change state event to update
         sm_event = SM_Event.Update;
     }
@@ -167,6 +180,11 @@ public class StateMachine
         sm_driver.blockingCooldown = Mathf.Clamp(sm_driver.blockingCooldown, -10.0f, 10.0f);
 
         Movement();
+
+        if(useFuzzySystem)
+            UpdateSpeed();
+
+        sm_driver.brakeTest = brake;
 
         sm_driver.currentSteer = steer;
 
@@ -184,8 +202,6 @@ public class StateMachine
     /// </summary>
     protected virtual void Exit()
     {
-    
-    
         sm_event = SM_Event.Exit;
     }
     
@@ -198,12 +214,12 @@ public class StateMachine
     }
     
     
-    public string GetSM_Name() { return sm_name; }
-    public SM_Event GetSM_Event() { return sm_event; }
+    public string GetSM_Name() => sm_name;
+    public SM_Event GetSM_Event() => sm_event;
 
-    public StateMachineData GetStateMachineData() { return sm_stateData; }
+    public StateMachineData GetStateMachineData() => sm_stateData;
 
-    private StateMachine GetStateMachine() { return this; }
+    private StateMachine GetStateMachine() => this; 
 
 
     /// <summary>
@@ -412,6 +428,105 @@ public class StateMachine
             }
         }
         return false;
+    }
+
+
+
+    private void UpdateSpeed()
+    {
+        float currentDistance = 0;
+        UpdateDistanceToCorner(ref currentDistance);
+        float currentSpeed = sm_driver.rb.velocity.magnitude;
+
+        currentSpeed = Mathf.Clamp(currentSpeed, speedAllowance.min, speedAllowance.max);
+        currentDistance = Mathf.Clamp(currentDistance, distanceAllowance.min, distanceAllowance.max);
+
+        driverSpeedFuzzy.Process(ref sm_driver.speedAdjust, currentSpeed, currentDistance);
+
+
+        switch (sm_driver.speedAdjust)
+        {
+            case SpeedAdjust.FloorIt:
+
+                accelerate = 1.0f;
+                brake = 0.0f;
+
+                break;
+            case SpeedAdjust.SpeedUp:
+
+                accelerate = 0.5f;
+                brake = 0.0f;
+
+                break;
+            case SpeedAdjust.MaintainSpeed:
+
+                accelerate = 0.0f;
+                brake = 0.0f;
+
+                break;
+            case SpeedAdjust.SlowDown:
+
+                accelerate = 0.0f;
+                brake = 0.5f;
+
+                break;
+            case SpeedAdjust.BrakeHard:
+
+                accelerate = 0.0f;
+                brake = 1.0f;
+
+                break;
+        }
+
+    }
+
+    protected void UpdateDistanceToCorner(ref float useDistance)
+    {
+        Vector3 checkFrom = sm_driver.transform.position + (sm_driver.transform.up * 2.0f);
+
+        Vector3 directionToTarget = sm_driver.currentTarget - sm_driver.transform.position;
+        directionToTarget.Normalize();
+
+        RaycastHit hit;
+
+        if(Physics.Raycast(checkFrom, directionToTarget, out hit, Mathf.Infinity))
+        {
+            Debug.DrawRay(checkFrom, directionToTarget * hit.distance, Color.green);
+            if(hit.transform.CompareTag("Wall"))
+            {
+                useDistance = hit.distance;
+                return;
+            }
+
+            if(hit.transform.CompareTag("Track"))
+            {
+                Vector3 incomingVec = hit.point - checkFrom;
+                Vector3 reflectVec = Vector3.Reflect(incomingVec, hit.normal);
+
+                float caputureDistance = hit.distance;
+                Debug.DrawRay(hit.point, reflectVec.normalized * hit.distance, Color.magenta);
+
+                if(Physics.Raycast(hit.point, reflectVec.normalized, out hit, Mathf.Infinity))
+                {
+                    if (hit.transform.CompareTag("Wall"))
+                    {
+                        useDistance = Vector3.Distance(sm_driver.transform.position, hit.point);
+                        return;
+                    }
+                    else
+                    {
+                        useDistance = caputureDistance * 2.0f;
+                        return;
+                    }
+                }
+                else
+                {
+                    useDistance = caputureDistance * 2.0f;
+                    return;
+                }
+            }
+        }
+
     }
 }
 

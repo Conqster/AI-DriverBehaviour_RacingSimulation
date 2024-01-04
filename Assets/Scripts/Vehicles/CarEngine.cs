@@ -78,9 +78,9 @@ namespace Car
             float b = (Input.GetKey(KeyCode.Space)) ? 1.0f : 0.0f;
             driveNow = v;
             
-            Move(v, b, h);
             if(Mathf.Abs(v) > 0 || Mathf.Abs(h) > 0)
             {
+                Move(v, b, h);
             }
 
            if(rb.velocity.magnitude > 0)

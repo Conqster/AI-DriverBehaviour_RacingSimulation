@@ -79,7 +79,7 @@ public class CircuitPathTracker : MonoBehaviour
 
             if (currentSpeed < maxSpeed)
             {
-                currentSpeed += 40.0f * Time.deltaTime;
+                currentSpeed += 5.0f /** 4 * Time.deltaTime*/;
             }
 
 
@@ -87,7 +87,7 @@ public class CircuitPathTracker : MonoBehaviour
 
             if(Vector3.Distance(transform.position, user.position) > maxDistance)
             {
-                currentSpeed -= 5.0f;
+                currentSpeed -= 10.0f;
                 currentSpeed = Mathf.Clamp(currentSpeed, 0.0f, Mathf.Infinity);
             }
         }

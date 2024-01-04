@@ -28,6 +28,12 @@ public class SM_NormalState : StateMachine
 
     protected override void Enter()
     {
+        speedAllowance.max = 50.0f;
+        speedAllowance.min = 10.0f;
+        distanceAllowance.max = 80.0f;
+        distanceAllowance.min = 0.0f;
+
+        useFuzzySystem = driverSpeedFuzzy.InitFuzzySystem(distanceAllowance, speedAllowance, sm_driver.currentFuzzinessUtilityData);
 
         sm_driver.steeringSensitivity = steeringSensitivity;
         sm_driver.visionLength = visionLength;
@@ -38,9 +44,6 @@ public class SM_NormalState : StateMachine
 
     protected override void Update()
     {
-        accelerate = 1.0f;
-        brake = 0.0f;
-
 
         //UPDATES THE WAYPOINT AND CURRENT GOAL/TARGET
         UpdateCurrentGoal(UpdateWaypointGoal());
@@ -62,6 +65,9 @@ public class SM_NormalState : StateMachine
         if(CheckBehind(out Rigidbody target, sm_driver.rayLength * 1.5f, sm_driver.behindRayType) && sm_driver.canUseBlock && sm_driver.blockingCooldown < 0)
         {
             //Time.timeScale = 0.3f;
+
+            if(target == null)
+                return;
 
             Vector3 right = sm_driver.transform.TransformDirection(sm_driver.transform.right);
             Vector3 toOther = target.transform.position - sm_driver.transform.position;
@@ -103,7 +109,7 @@ public class SM_NormalState : StateMachine
         ObstacleAviodance(visionLength, visionAngle, steeringSensitivity, ref steer);
 
         float distanceToTarget = Vector3.Distance(sm_driver.currentTarget, sm_driver.rb.transform.position);
-        Brakes(ref brake, distanceToTarget, ref accelerate);
+        //Brakes(ref brake, distanceToTarget, ref accelerate);
 
 
         base.Update();

@@ -13,15 +13,22 @@ public class InvokeCrazy : MonoBehaviour
     [SerializeField, Range(0, 10)] float playTime;
     [SerializeField, Range(0, 5)] float playTimer;
     public float modTime;
+    public float useTime = 1;
+
 
     private void Update()
     {
 
-        modTime = playTime % playTimer;   
+        modTime = playTime % playTimer;
 
-        if(doCarzy)
+        //if(doCarzy)
+        //{
+        //    StartCoroutine(Do());
+        //}
+
+        if (doCarzy)
         {
-            if(InvokeAt(ref timer, 1.0f))
+            if (InvokeAt(ref timer, 1.0f))
             {
                 crazy();
             }
@@ -29,6 +36,21 @@ public class InvokeCrazy : MonoBehaviour
         else
             timer = 0;
     }
+
+
+
+    private bool NewInvoke(ref float timer, float value)
+    {
+        if (timer != 50.0f)
+            timer += Time.deltaTime;
+
+        if (timer > value && timer != 50.0f)
+            return true;
+
+        return false;
+    }
+
+
 
     private bool InvokeAt(ref float timer, float value)
     {
@@ -54,7 +76,8 @@ public class InvokeCrazy : MonoBehaviour
     {
         //Do stuffs
         //Do stuffs
-        yield return new WaitForSeconds(counter);
+        yield return new WaitForSeconds(useTime);
+        crazy();
     }
 
 

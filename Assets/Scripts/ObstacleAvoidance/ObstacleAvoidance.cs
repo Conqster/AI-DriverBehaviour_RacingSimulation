@@ -103,7 +103,6 @@ public class ObstacleAvoidance : MonoBehaviour
     {
         int countOnLeft = 0;
         int countOnRight = 0;
-        int desiredDir = 0;
 
         for (float angleOffset = -angle; angleOffset <= angle; angleOffset += 5.0f)
         {
@@ -128,8 +127,7 @@ public class ObstacleAvoidance : MonoBehaviour
                 Debug.DrawRay(transform.position, whiskerCheck, (whiskerHit) ? Color.red : Color.yellow);
         }
  
-        desiredDir = (countOnRight > countOnLeft) ? -1 : 1;
-        return desiredDir;
+        return (countOnRight > countOnLeft) ? -1 : 1;
     }
 
 

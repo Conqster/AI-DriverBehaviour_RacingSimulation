@@ -36,6 +36,8 @@ public class DriverBehaviour : MonoBehaviour
 
     private float steer = 0.0f;
 
+    public FuzzinessUtilityData fuzzinessNS; //TO-DO:  later create a class that hold diffrent fuzzy type for state, so it could be call through .getcomponent from tranform
+
     [Header("Debugger")]
     [SerializeField] private bool obstacleAhead = false;
 
@@ -47,7 +49,7 @@ public class DriverBehaviour : MonoBehaviour
         circuit = GameObject.FindGameObjectWithTag("Circuit").GetComponent<Circuit>();
         target = circuit.waypoints[currentWaypointIndex].position;
         rb = GetComponent<Rigidbody>();
-        driverData = new DriverData(engine, circuit, rb, obstacleAvoidance, transform);
+        driverData = new DriverData(engine, circuit, rb, obstacleAvoidance, transform, fuzzinessNS);
         driverData.mat = mat;
         driverData.canUseBlock = canBlock;  
         driverSM = new SM_DefaultState(driverData);
