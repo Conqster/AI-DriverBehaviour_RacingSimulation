@@ -17,12 +17,12 @@ public class TestDotProduct : MonoBehaviour
 
             if (Vector3.Dot(forward, toOther) < 0)
             {
-                print("The other transform is behind me!");
+                //print("The other transform is behind me!");
             }
             if(Vector3.Dot(forward, toOther) > 0)
             {
 
-                print("The other transform is ahead me!");
+                //print("The other transform is ahead me!");
             }
 
             value = Vector3.Dot(forward, toOther);

@@ -533,7 +533,6 @@ public class SM_NormalState : StateMachine
             }
 
 
-
             //heavy steer in the overtake direction
             sm_driver.engine.Move(accelerate, 0.0f, dominantSide);
 
@@ -555,11 +554,17 @@ public class SM_NormalState : StateMachine
             //info.milestone2 = overtakeMilestone1 + (opponent.transform.transform.forward * intervalsBtwMilestones);
             //info.milestone3 = overtakeMilestone1 + ((opponent.transform.transform.forward * intervalsBtwMilestones) * 2.0f);
 
-            Vector3 directionToTarget = sm_driver.currentTarget - sm_driver.transform.position;
-            directionToTarget.Normalize();
+            // a math function generate points based on current path, points for overtaking path
+            Vector3[] myPoints = CustomMath.GeneratePoints(overtakeMilestone1, sm_driver.currentWaypointIndex, sm_driver.circuit.waypoints, intervalsBtwMilestones);
 
-            info.milestone2 = overtakeMilestone1 + (directionToTarget * intervalsBtwMilestones);
-            info.milestone3 = overtakeMilestone1 + ((directionToTarget * intervalsBtwMilestones) * 2.0f);
+            //Vector3 directionToTarget = sm_driver.currentTarget - sm_driver.transform.position;
+            //directionToTarget.Normalize();
+
+            //info.milestone2 = overtakeMilestone1 + (directionToTarget * intervalsBtwMilestones);
+            //info.milestone3 = overtakeMilestone1 + ((directionToTarget * intervalsBtwMilestones) * 2.0f);
+
+            info.milestone2 = myPoints[1];
+            info.milestone3 = myPoints[2];
 
             Vector3 copyCurrentPos = sm_driver.transform.position;
 
