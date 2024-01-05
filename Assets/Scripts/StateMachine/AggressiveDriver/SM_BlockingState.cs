@@ -36,6 +36,7 @@ public class SM_BlockingState : StateMachine
 
         sm_driver.blockingCooldown = coolDownValue;
 
+        canDrive = true;
         base.Enter();
     }
 

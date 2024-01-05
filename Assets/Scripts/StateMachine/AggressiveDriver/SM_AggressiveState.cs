@@ -28,6 +28,7 @@ public class SM_AggressiveState : StateMachine
         sm_driver.visionLength = visionLength;
         sm_driver.visionAngle = visionAngle;
 
+        canDrive = true;
         base.Enter();
     }
 

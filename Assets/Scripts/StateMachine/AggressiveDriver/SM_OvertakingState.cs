@@ -62,6 +62,10 @@ public class SM_OvertakingState : StateMachine
         //if not readjust to position 
         //for a smooth overtake
 
+        speedAllowance = fuzzyUtilityCollection.OS_SpeedAllowance;
+        distanceAllowance = fuzzyUtilityCollection.OS_DistanceAllowance;
+
+        sm_driver.currentFuzzinessUtilityData = fuzzyUtilityCollection.OS_FuzzyUtilityData;
 
         sm_driver.steeringSensitivity = steeringSensitivity;
         sm_driver.visionLength = visionLength;
@@ -72,6 +76,7 @@ public class SM_OvertakingState : StateMachine
             Debug.Log("The initial goal is null");
         }
 
+        canDrive = true;
         base.Enter();
     }
 

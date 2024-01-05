@@ -36,7 +36,7 @@ public class DriverData
     public Vector3 currentTarget;
     public Transform currentWaypoint = null;
     public WhiskeySearchType behindRayType = WhiskeySearchType.CentralRayWithWhiskey;
-    public SpeedAdjust speedAdjust;
+    public SpeedAdjust speedAdjust = SpeedAdjust.BrakeHard;
     public FuzzinessUtilityData currentFuzzinessUtilityData;   //if having another create a sturct then split in Driver Data
 
     [Header("Debugger")]
@@ -119,9 +119,11 @@ public class StateMachine
     protected SpeedAllowance speedAllowance;
     protected DistanceAllowance distanceAllowance;
     protected DriverSpeedFuzzy driverSpeedFuzzy;
+    protected FuzzinessUtilityDataCollection fuzzyUtilityCollection;
     protected bool useFuzzySystem = false;
 
     private CarGrounded carGrounded;
+    protected bool canDrive = false;
 
     public StateMachine(DriverData driver)
     {
@@ -130,6 +132,7 @@ public class StateMachine
         sm_driver = driver;
         sm_duration = 0.0f;
 
+        fuzzyUtilityCollection = sm_driver.transform.GetComponent<FuzzinessUtilityDataCollection>();
         driverSpeedFuzzy = driver.transform.GetComponent<DriverSpeedFuzzy>();
         carGrounded = driver.transform.GetComponent<CarGrounded>();
     }
@@ -168,7 +171,7 @@ public class StateMachine
     {
         sm_duration = 0.0f;
 
-
+        useFuzzySystem = driverSpeedFuzzy.InitFuzzySystem(distanceAllowance, speedAllowance, sm_driver.currentFuzzinessUtilityData);
         //after all logic as be performed change state event to update
         sm_event = SM_Event.Update;
     }
@@ -184,11 +187,15 @@ public class StateMachine
 
         Movement();
 
-        if(useFuzzySystem)
-            UpdateSpeed();
+        if(canDrive)
+        {
+            if (useFuzzySystem)
+                UpdateSpeed();
 
-        if (carGrounded.NeedToFlip)
-            carGrounded.Flip(sm_driver.currentTarget);
+            if (carGrounded.NeedToFlip)
+                carGrounded.Flip(sm_driver.currentTarget);
+        }
+
         
 
         sm_driver.brakeTest = brake;

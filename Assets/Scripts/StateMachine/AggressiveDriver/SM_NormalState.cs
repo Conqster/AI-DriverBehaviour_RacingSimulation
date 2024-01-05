@@ -34,17 +34,18 @@ public class SM_NormalState : StateMachine
 
     protected override void Enter()
     {
-        speedAllowance.max = 50.0f;
-        speedAllowance.min = 10.0f;
-        distanceAllowance.max = 80.0f;
-        distanceAllowance.min = 0.0f;
 
-        useFuzzySystem = driverSpeedFuzzy.InitFuzzySystem(distanceAllowance, speedAllowance, sm_driver.currentFuzzinessUtilityData);
+        speedAllowance = fuzzyUtilityCollection.NS_SpeedAllowance;
+        distanceAllowance = fuzzyUtilityCollection.NS_DistanceAllowance;
+
+        sm_driver.currentFuzzinessUtilityData = fuzzyUtilityCollection.NS_FuzzyUtilityData;
+        
 
         sm_driver.steeringSensitivity = steeringSensitivity;
         sm_driver.visionLength = visionLength;
         sm_driver.visionAngle = visionAngle;
 
+        canDrive = true;
         base.Enter();
     }
 
@@ -294,6 +295,10 @@ public class SM_NormalState : StateMachine
 
         if(overtakeTarget != null)
         {
+            //only overtake if my speed beats opponent
+            if (sm_driver.rb.velocity.magnitude < overtakeOpponent.velocity.magnitude)
+                return false;
+
             //dominant side 
             Vector3 opponentCenterMass = overtakeTarget.transform.position + (Vector3.up * 0.5f);
 
@@ -557,19 +562,11 @@ public class SM_NormalState : StateMachine
             // a math function generate points based on current path, points for overtaking path
             Vector3[] myPoints = CustomMath.GeneratePoints(overtakeMilestone1, sm_driver.currentWaypointIndex, sm_driver.circuit.waypoints, intervalsBtwMilestones);
 
-            //Vector3 directionToTarget = sm_driver.currentTarget - sm_driver.transform.position;
-            //directionToTarget.Normalize();
-
-            //info.milestone2 = overtakeMilestone1 + (directionToTarget * intervalsBtwMilestones);
-            //info.milestone3 = overtakeMilestone1 + ((directionToTarget * intervalsBtwMilestones) * 2.0f);
 
             info.milestone2 = myPoints[1];
             info.milestone3 = myPoints[2];
 
             Vector3 copyCurrentPos = sm_driver.transform.position;
-
-            //Time.timeScale = 0.1f;
-            //Debug.Log("Using timeScale");
 
             Debug.DrawLine(copyCurrentPos, info.milestone1, Color.cyan, 10.0f);
             Debug.DrawLine(info.milestone1, info.milestone2, Color.cyan, 10.0f);

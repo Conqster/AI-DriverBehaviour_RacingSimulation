@@ -21,7 +21,7 @@ public class SM_DefaultState : StateMachine
     protected override void Enter()
     {
 
-
+        canDrive = false;
         base.Enter();
     }
 
