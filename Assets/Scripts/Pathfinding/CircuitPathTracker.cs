@@ -1,5 +1,4 @@
-using System.Collections;
-using System.Collections.Generic;
+using CarAI.Pathfinding;
 using UnityEngine;
 
 public class CircuitPathTracker : MonoBehaviour

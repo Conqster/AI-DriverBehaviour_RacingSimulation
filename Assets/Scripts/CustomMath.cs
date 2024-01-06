@@ -188,4 +188,29 @@ public static class CustomMath
 
         return (Vector3.Dot(vecPointWayPoint, vecWayPointForward) > 0);
     }
+
+
+    public static float NextThreePointIsAPossibleCorner(List<Transform> path, int nextWaypointIndex)
+    {
+        Vector3[] points = new Vector3[3];
+
+        int index = nextWaypointIndex;
+        for (int i = 0; i < 3; i++)
+        {
+            index = (nextWaypointIndex + i) % path.Count;
+
+            points[i] = path[index].position;
+
+            Debug.Log("Current i : " + i + "Current index: " + index);
+        }
+
+        Vector3 vec01 = (points[1] - points[0]).normalized;
+        Vector3 vec12 = (points[2] - points[1]).normalized;
+
+        float dot0112 = Vector3.Dot(vec01, vec12);
+
+        float angle = (Mathf.Acos(dot0112 / (vec01.magnitude * vec12.magnitude))) * Mathf.Rad2Deg;
+
+        return angle;
+    }
 }

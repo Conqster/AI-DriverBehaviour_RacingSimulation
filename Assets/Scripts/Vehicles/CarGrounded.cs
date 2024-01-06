@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Car;
+using CarAI.Vehicle;
 
 public class CarGrounded : MonoBehaviour
 {

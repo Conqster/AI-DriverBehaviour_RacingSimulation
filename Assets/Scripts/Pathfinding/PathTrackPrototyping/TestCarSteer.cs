@@ -1,7 +1,5 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using Car;
+using CarAI.Vehicle;
 using TMPro;
 
 public class TestCarSteer : MonoBehaviour

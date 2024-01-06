@@ -11,16 +11,11 @@ public class SM_NormalState : StateMachine
 {
     //private Vector3 waypointTarget;
 
-    private float steeringSensitivity = 0.01f;
-    private float visionLength = 9.0f;
-    private float visionAngle = 25.0f;
-
 
     private float lastObtacleTime = Mathf.Infinity;
     private float normalSteerIntensity = 0.01f;
 
     private bool wantToOverTake = false;
-    private float tryOvertakeCoolDown = 5.0f; // probably going to bring out to sm_driver 
     //because this would delay overtaking if possible at start f
 
     private Rigidbody overtakeOpponent;
@@ -41,9 +36,11 @@ public class SM_NormalState : StateMachine
         sm_driver.currentFuzzinessUtilityData = fuzzyUtilityCollection.NS_FuzzyUtilityData;
         
 
-        sm_driver.steeringSensitivity = steeringSensitivity;
-        sm_driver.visionLength = visionLength;
-        sm_driver.visionAngle = visionAngle;
+        sm_driver.steeringSensitivity = sm_driver.stateInfo.NS_Data.steeringSensitivity;
+        sm_driver.visionLength = sm_driver.stateInfo.NS_Data.visionLength;
+        sm_driver.visionAngle = sm_driver.stateInfo.NS_Data.visionAngle;
+
+        sm_driver.overtakeCooldown = sm_driver.stateInfo.NS_Data.coolDown1;
 
         canDrive = true;
         base.Enter();
@@ -60,11 +57,6 @@ public class SM_NormalState : StateMachine
         if (sm_driver.goBerserk)
         {
             TriggerExit(new SM_AggressiveState(sm_driver));
-        }
-
-        if (sm_driver.testState)
-        {
-            TriggerExit(new SM_TestState(sm_driver));
         }
 
 
@@ -105,16 +97,21 @@ public class SM_NormalState : StateMachine
         ///if there is a car infront 
         ///there is a potential to overtake 
         ///If there is opening for overtaking factors 
-        tryOvertakeCoolDown -= Time.deltaTime;
-        if (PotentialToOvertake(ref overtakeOpponent))
+        sm_driver.overtakeCooldown -= Time.deltaTime;
+
+        if(sm_driver.overtakeCooldown < 0)
         {
-            TriggerExit(new SM_OvertakingState(sm_driver, new OvertakingInfo()));
-            //Debug.Log("Trying to overtake");
-            wantToOverTake = true;
-            //sm_event = SM_Event.Exit;
+            sm_driver.overtakeCooldown = Mathf.Clamp(sm_driver.overtakeCooldown, 0, Mathf.Infinity);
+            if (PotentialToOvertake(ref overtakeOpponent))
+            {
+                TriggerExit(new SM_OvertakingState(sm_driver, new OvertakingInfo()));
+                //Debug.Log("Trying to overtake");
+                wantToOverTake = true;
+                //sm_event = SM_Event.Exit;
+            }
         }
 
-        ObstacleAviodance(visionLength, visionAngle, steeringSensitivity, ref steer);
+        ObstacleAviodance(sm_driver.visionLength, sm_driver.visionAngle, sm_driver.steeringSensitivity, ref steer);
 
         float distanceToTarget = Vector3.Distance(sm_driver.currentTarget, sm_driver.rb.transform.position);
         //Brakes(ref brake, distanceToTarget, ref accelerate);
@@ -139,8 +136,10 @@ public class SM_NormalState : StateMachine
             {
                 //TriggerExit(new SM_AggressiveState(sm_driver));
                 TriggerExit(new SM_NormalState(sm_driver));
-                tryOvertakeCoolDown = 5.0f;
+                //tryOvertakeCoolDown = 5.0f;
+
             }
+            sm_driver.overtakeCooldown = sm_driver.stateInfo.NS_Data.coolDown1;
             wantToOverTake = false;
         }
 
@@ -149,74 +148,8 @@ public class SM_NormalState : StateMachine
     }
 
 
-    private void Brakes(ref float brake, float distanceToTarget, ref float acc)
-    {
-        if (distanceToTarget < 15 && sm_driver.rb.velocity.magnitude > 15.0f)
-        {
-            brake = (15 - distanceToTarget / 15);
-            //brake = 0.5f;
-        }
-
-        //SPEED DANGER NEED TO BREAK 
-        if (sm_driver.rb.velocity.magnitude > 25.0f && distanceToTarget < 45.0f && distanceToTarget > 15.0f)
-        {
-            brake = 1.0f;
-        }
 
 
-        RaycastHit hit;
-        Vector3 origin = sm_driver.transform.position +
-                 new Vector3(0.0f, sm_driver.raycastUpOffset, 0.0f);
-        float tooClose = sm_driver.rayLength * (3.0f / 4.0f);
-        bool opponentValid = false;    
-
-        if (Physics.Raycast(origin, sm_driver.transform.forward, out hit, sm_driver.rayLength))
-        {
-            if (hit.distance < tooClose && hit.transform.CompareTag("Vehicle"))
-            {
-                float minAcc = 0.5f;
-                float maxAcc = 0.9f;
-                //determine how close is it to half tooclose
-                float closeness = Mathf.InverseLerp(tooClose * 0.5f, tooClose, hit.distance);
-                acc = Mathf.Lerp(minAcc, maxAcc, closeness);
-                //Debug.Log("Acc: " + acc);
-                brake = 1f;
-                opponentValid = true;
-            }
-        }
-        Color toUse = (opponentValid) ? Color.red : Color.blue;
-        Debug.DrawRay(origin, sm_driver.transform.forward * sm_driver.rayLength, toUse);
-
-        //TO-DO: check distance to target, there is a corner to it use brakes, if not do not brakes 
-    }
-
-
-    private void SteerToTarget(float targetAngle, float rotIntensity, ref float steerDirRatio)
-    {
-        //get the angle to target 
-        //get rotation direction to target
-        //the further the intensity 
-        //the closer, less intensity
-        float maxRotationAt = 60.0f;// make global to current state later 
-        float minRotationAt = 30.0f;
-
-        //lerp rotation intensity based on max and min RotationAt
-        float rotationRatio = Mathf.InverseLerp(minRotationAt, maxRotationAt, Mathf.Abs(targetAngle));
-        //float currentIntensity = rotIntensity * rotationRatio;
-        float currentIntensity = Mathf.Lerp(rotIntensity * 0.1f, rotIntensity, rotationRatio);
-
-        //steer direction
-        float steerDir = Mathf.Sign(sm_driver.rb.velocity.magnitude);
-
-        //increase steer based on intensity and direction
-        steerDirRatio += (currentIntensity * steerDir);
-        sm_driver.currentDirection = steerDir;
-        sm_driver.currentIntensity = currentIntensity;
-        sm_driver.rotRatio = rotationRatio;
-
-        //keep steer in the range -1 and 1
-        steerDirRatio = Mathf.Clamp(steerDirRatio, -1.0f, 1.0f);
-    }
 
 
     /// <summary>
@@ -224,65 +157,10 @@ public class SM_NormalState : StateMachine
     /// overtake. 
     /// Later change to using the degree of true
     /// </summary>
+    /// <param name="overtakeTarget"></param>
     /// <returns></returns>
-    private bool PotentialToOvertakeOld()
-    {
-        ///current speed against opponent speed 
-        ///distance to opponent
-        ///
-        bool mayOvertake = false;
-        bool overtakeRight = false;
-        bool overtakeLeft = false;
-
-        RaycastHit hit;
-        Vector3 origin = sm_driver.transform.position + 
-                         new Vector3(0.0f, sm_driver.raycastUpOffset, 0.0f);
-
-        Vector3 leftWhiskey = origin - (sm_driver.transform.right);
-        Vector3 rightWhiskey = origin + (sm_driver.transform.right);
-
-        float tooClose = sm_driver.rayLength * (3.0f/4.0f);
-        if(Physics.Raycast(origin, sm_driver.transform.forward, out hit, sm_driver.rayLength))
-        {
-            if(hit.distance > tooClose && hit.transform.CompareTag("Vehicle"))
-            {
-                mayOvertake  = true; 
-            }
-        }
-        if (Physics.Raycast(rightWhiskey, sm_driver.transform.forward, out hit, sm_driver.rayLength))
-        {
-            if (hit.distance > tooClose && hit.transform.CompareTag("Vehicle"))
-            {
-                overtakeRight = true;
-                //Debug.Log("Right hit" + hit.distance);
-            }
-        }
-        if (Physics.Raycast(leftWhiskey, sm_driver.transform.forward, out hit, sm_driver.rayLength))
-        {
-            if (hit.distance > tooClose && hit.transform.CompareTag("Vehicle"))
-            {
-                overtakeLeft = true;
-                //Debug.Log("Left hit" + hit.distance);
-            }
-        }
-
-        Color hitColour = (mayOvertake) ? Color.blue : Color.red;
-        Color rightColour = (overtakeRight) ? Color.blue : Color.red;
-        Color leftColour = (overtakeLeft) ? Color.blue : Color.red;
-
-        Debug.DrawRay(origin, sm_driver.transform.forward * sm_driver.rayLength, hitColour);
-        Debug.DrawRay(rightWhiskey, sm_driver.transform.forward * sm_driver.rayLength, rightColour);
-        Debug.DrawRay(leftWhiskey, sm_driver.transform.forward * sm_driver.rayLength, leftColour);
-
-
-
-        return mayOvertake || overtakeLeft || overtakeRight;
-    }
-
-
     private bool PotentialToOvertake(ref Rigidbody overtakeTarget)
     {
-
         //TO-DO: get the info of the car wanting to overtake
         //more dominant side for overtaking 
         //width to target for overtaking
@@ -307,8 +185,8 @@ public class SM_NormalState : StateMachine
 
             RaycastHit leftSideHit, rightSideHit;
 
-            bool dominantLeft = sm_driver.obstacleAvoidance.ObstacleDetection(opponentCenterMass, -overtakeTarget.transform.right, out leftSideHit, Mathf.Infinity, "Wall");
-            bool dominantRight = sm_driver.obstacleAvoidance.ObstacleDetection(opponentCenterMass, overtakeTarget.transform.right, out rightSideHit, Mathf.Infinity, "Wall");
+            bool dominantLeft = obstacleAvoidance.ObstacleDetection(opponentCenterMass, -overtakeTarget.transform.right, out leftSideHit, Mathf.Infinity, "Wall");
+            bool dominantRight = obstacleAvoidance.ObstacleDetection(opponentCenterMass, overtakeTarget.transform.right, out rightSideHit, Mathf.Infinity, "Wall");
 
             int dominantSide = 0;
 
@@ -339,13 +217,23 @@ public class SM_NormalState : StateMachine
 
 
             //length of about four cars
-            //float minimumCornerDistanceOvertake = 19.0f;
-            float minimumCornerDistanceOvertake = 25.0f;
+            float minimumCornerDistanceOvertake = 19.0f;
+            //float minimumCornerDistanceOvertake = 100.0f;
 
             if (distance > minimumCornerDistanceOvertake)
             {
                 Debug.Log("Distance To Corner: " + distance);
-                return true;
+
+
+                //distance to target --  2 length of a car
+                float minimumDistance = 8.0f;
+                float distanceToOpponent = Vector3.Distance(sm_driver.rb.position, overtakeOpponent.position);
+                Debug.Log("Distance To Opponent: " + distanceToOpponent);
+
+                if (distanceToOpponent > minimumDistance)
+                    return true;
+
+                sm_driver.overtakeCooldown = 2f;
             }
             #endregion
         }
@@ -366,17 +254,19 @@ public class SM_NormalState : StateMachine
         Vector3 leftWhiskey = origin - (sm_driver.transform.right);
         Vector3 rightWhiskey = origin + (sm_driver.transform.right);
 
-        if(sm_driver.obstacleAvoidance.ObstacleDetection(origin, sm_driver.transform.forward, out opponentHit, sm_driver.rayLength, "Vehicle"))
+        if(obstacleAvoidance.ObstacleDetection(origin, sm_driver.transform.forward, out opponentHit, sm_driver.rayLength, "Vehicle"))
         return opponentHit.rigidbody;
 
-        if(sm_driver.obstacleAvoidance.ObstacleDetection(leftWhiskey, sm_driver.transform.forward, out opponentHit, sm_driver.rayLength, "Vehicle"))
+        if(obstacleAvoidance.ObstacleDetection(leftWhiskey, sm_driver.transform.forward, out opponentHit, sm_driver.rayLength, "Vehicle"))
         return opponentHit.rigidbody;
 
-        if(sm_driver.obstacleAvoidance.ObstacleDetection(rightWhiskey, sm_driver.transform.forward, out opponentHit, sm_driver.rayLength, "Vehicle"))
+        if(obstacleAvoidance.ObstacleDetection(rightWhiskey, sm_driver.transform.forward, out opponentHit, sm_driver.rayLength, "Vehicle"))
         return opponentHit.rigidbody;
 
         return null;
     }
+
+
 
 
     /// <summary>
@@ -384,14 +274,10 @@ public class SM_NormalState : StateMachine
     /// returns true/false if achievable
     /// </summary>
     /// <param name="info"></param>
+    /// <param name="opponent"></param>
     /// <returns></returns>
-    private bool TryOvertakingOld(out OvertakingInfo info)
+    private bool TryOvertaking(out OvertakingInfo info, Rigidbody opponent)
     {
-        info = new OvertakingInfo();
-
-        //raycast etc get opponent Transform
-        RaycastHit hit;
-
 
         //TO-DO: REGISTER A GHOST TARGET / VECTOR DIRECTION TO MAINTAIN
         //       OPPONENT TRANSFORM
@@ -401,100 +287,6 @@ public class SM_NormalState : StateMachine
         //       IF ALL ABOVE DATA HAS BEEN STORED RETURN, TURN
         //       TRY POSITION DRIVER FOR OVERTAKE
 
-        //ray cast origin point
-        Vector3 origin = sm_driver.transform.position +
-                  new Vector3(0.0f, sm_driver.raycastUpOffset, 0.0f);
-
-        if (Physics.Raycast(origin, sm_driver.transform.forward, out hit))
-        {
-            if(hit.transform.CompareTag("Vehicle"))
-            {
-                info.opponentTransform = hit.transform;
-                info.opponentRb = hit.rigidbody;
-            }
-
-            if(info.opponentTransform != null)
-            {
-
-                //TO-DO: REFACTORIZE WITH OTHER DOT PRODUCTS
-                //direction to overtake from 
-                int overtakingdirection = 0;
-
-                Vector3 waypointAhead = sm_driver.currentTarget;
-                Transform targetOpponent = hit.transform;
-
-                Vector3 right = targetOpponent.TransformDirection(targetOpponent.right);
-                Vector3 toOther = waypointAhead - targetOpponent.position;
-
-                float dot = Vector3.Dot(right, toOther);
-
-                overtakingdirection = (dot < 0.0f) ? 1 : -1;
-
-                //TESTING AND NEED CHANGING
-                sm_driver.engine.Move(0.5f, 0.2f, overtakingdirection);
-
-                //the offsetting value from the opponent 
-                //we overdircetion for which side to consider for overtaking 
-                float sideOvertakingOffset = 2.0f * overtakingdirection;    //2 unit offset 
-                //Vector3 sidePointToOpponent = info.opponentTransform.position - 
-                //                                info.opponentTransform.right * sideOvertakingOffset;
-
-                Vector3 sidePointToOpponent = hit.transform.position +
-                                hit.transform.right * sideOvertakingOffset;
-
-                CustomMath.DebugObject(PrimitiveType.Capsule, sidePointToOpponent, sm_driver.mat);
-                GameObject sidePointpotentialObj = new GameObject();
-                Ghost sidePointpotential = new Ghost(sidePointpotentialObj);
-                sidePointpotential.obj.transform.position = sidePointToOpponent;
-                info.potentialGoal = sidePointpotential;
-
-                //predict achieve position after overtake
-                //let say 10 units 
-
-                GameObject ghost = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                ghost.name = "Ghost";
-                //ghost.transform.position = sidePointToOpponent + (info.opponentTransform.forward * 10.0f);
-                ghost.transform.position = sidePointToOpponent + (hit.transform.forward * 60.0f);   //ahead by 60 
-
-                if (sm_driver.mat != null)
-                {
-                    ghost.GetComponent<Renderer>().material = sm_driver.mat;
-                }
-
-                if (ghost.TryGetComponent<Collider>(out Collider col))
-                {
-                    UnityEngine.Object.Destroy(col);
-                }
-                Ghost ghostInfo = new Ghost(ghost);
-                info.overtakeGhost = ghostInfo;
-
-                //TO-DO: STEER AWAY FROM OPPONENT
-                //TESTING
-                sidePointToOpponent = sidePointToOpponent - (hit.transform.forward * 3.0f); //draw backwards by one units
-                GameObject sidePointObj = new GameObject();
-                Ghost sidePoint = new Ghost(sidePointObj);
-                sidePoint.obj.transform.position = sidePointToOpponent;
-                info.initialGoal = sidePoint;
-
-
-                //REGISTER CURRENT WAYPOINT IN OVERTAKINGDATA
-                info.initialWaypoint = sm_driver.currentWaypoint.position;
-
-                CustomMath.DebugObject(PrimitiveType.Cube, sidePointToOpponent, sm_driver.mat);
-
-               
-                return true;    
-            }
-        }
-
-
-        return false;
-    }
-
-
-
-    private bool TryOvertaking(out OvertakingInfo info, Rigidbody opponent)
-    {
         info = new OvertakingInfo();
 
         if (opponent != null)
@@ -504,8 +296,8 @@ public class SM_NormalState : StateMachine
 
             RaycastHit leftSideHit, rightSideHit;
 
-            bool dominantLeft = sm_driver.obstacleAvoidance.ObstacleDetection(opponentCenterMass, -opponent.transform.right, out leftSideHit, Mathf.Infinity, "Wall");
-            bool dominantRight = sm_driver.obstacleAvoidance.ObstacleDetection(opponentCenterMass, opponent.transform.right, out rightSideHit, Mathf.Infinity, "Wall");
+            bool dominantLeft = obstacleAvoidance.ObstacleDetection(opponentCenterMass, -opponent.transform.right, out leftSideHit, Mathf.Infinity, "Wall");
+            bool dominantRight = obstacleAvoidance.ObstacleDetection(opponentCenterMass, opponent.transform.right, out rightSideHit, Mathf.Infinity, "Wall");
 
             int dominantSide = 0;
 
@@ -520,37 +312,55 @@ public class SM_NormalState : StateMachine
                     dominantSide = 1;
             }
 
+            #region old side check
             //check my side to the opponent 
-            Vector3 right = sm_driver.transform.TransformDirection(opponent.transform.right);
-            Vector3 toOther = opponent.position - sm_driver.transform.position;
+            //Vector3 right = sm_driver.transform.TransformDirection(opponent.transform.right);
+            //Vector3 toOther = opponent.position - sm_driver.transform.position;
 
-            Vector3 localTarget = sm_driver.transform.InverseTransformPoint(opponent.transform.position);
-            float angle = Mathf.Atan2(localTarget.x, localTarget.z) * Mathf.Rad2Deg;
+            //Vector3 localTarget = sm_driver.transform.InverseTransformPoint(opponent.transform.position);
+            //float angle = Mathf.Atan2(localTarget.x, localTarget.z) * Mathf.Rad2Deg;
 
-            int angleDirOpponentSide = (angle >  0) ? 1 : -1;
+            //int angleDirOpponentSide = (angle >  0) ? 1 : -1;
 
-            if(angleDirOpponentSide == dominantSide)
-            {
-                //meaning driver have to turn towards opponent to overtake
-                //which could be bad 
+            //if(angleDirOpponentSide == dominantSide)
+            //{
+            //    //meaning driver have to turn towards opponent to overtake
+            //    //which could be bad 
 
-                if(angle > 5.0f)  //should be able to make it under 20 degrees
-                    return false;
+            //    if(angle > 5.0f)  //should be able to make it under 20 degrees
+            //        return false;
 
-                //for now return later, perform a calcul;ation to repath a overatking
-            }
+            //    //for now return later, perform a calcul;ation to repath a overatking
+            //}
+            #endregion
 
 
             //heavy steer in the overtake direction
             sm_driver.engine.Move(accelerate, 0.0f, dominantSide);
 
-
             //then i can overtake
             Vector3 overtakeMilestone1 = Vector3.zero;
-            float widthOfAVehicle = 4.0f;
+            float widthOf2Vehicle = 4.0f;
+            float lengthOfVechicle = 4.0f;
 
-            overtakeMilestone1 = opponent.position + (opponent.transform.right * dominantSide * widthOfAVehicle);
+            overtakeMilestone1 = opponent.position + (opponent.transform.up * 0.5f)+
+                                (opponent.transform.right * dominantSide * widthOf2Vehicle) + 
+                                (opponent.transform.forward * ((3.0f/4.0f) * lengthOfVechicle));
 
+            #region New Side Check
+            Vector3 vecToOpponent = (opponent.position - sm_driver.transform.position).normalized;
+            Vector3 vecToOvertake = (overtakeMilestone1 - sm_driver.transform.position).normalized;
+
+            float dot = Vector3.Dot(vecToOvertake, vecToOpponent);
+            float angleBtw = (Mathf.Acos(dot / (vecToOpponent.magnitude * vecToOvertake.magnitude))) * Mathf.Rad2Deg;
+
+            Debug.Log("Angle for overtaking: " + angleBtw);
+            if (angleBtw < 10f)
+                return false;
+
+            #endregion
+
+ 
 
             //update info
             info.opponentRb = opponent;
@@ -563,17 +373,17 @@ public class SM_NormalState : StateMachine
             //info.milestone3 = overtakeMilestone1 + ((opponent.transform.transform.forward * intervalsBtwMilestones) * 2.0f);
 
             // a math function generate points based on current path, points for overtaking path
-            Vector3[] myPoints = CustomMath.GeneratePoints(overtakeMilestone1, sm_driver.currentWaypointIndex, sm_driver.circuit.waypoints, intervalsBtwMilestones);
+            Vector3[] myPoints = CustomMath.GeneratePoints(overtakeMilestone1, sm_driver.currentWaypointIndex, sm_driver.circuit.waypoints, intervalsBtwMilestones,4);
 
 
             info.milestone2 = myPoints[1];
             info.milestone3 = myPoints[2];
+            info.milestone4 = myPoints[3];
 
-            Vector3 copyCurrentPos = sm_driver.transform.position;
-
-            Debug.DrawLine(copyCurrentPos, info.milestone1, Color.cyan, 10.0f);
+            Debug.DrawLine(sm_driver.transform.position, info.milestone1, Color.magenta, 10.0f);
             Debug.DrawLine(info.milestone1, info.milestone2, Color.cyan, 10.0f);
-            Debug.DrawLine(info.milestone2, info.milestone3, Color.cyan, 10.0f);
+            Debug.DrawLine(info.milestone2, info.milestone3, Color.yellow, 10.0f);
+            Debug.DrawLine(info.milestone3, info.milestone4, Color.cyan, 10.0f);
             return true;
         }
         else

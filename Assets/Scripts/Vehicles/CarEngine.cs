@@ -1,10 +1,8 @@
-using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 
 
-namespace Car
+namespace CarAI.Vehicle
 {
 
     public enum DriveType

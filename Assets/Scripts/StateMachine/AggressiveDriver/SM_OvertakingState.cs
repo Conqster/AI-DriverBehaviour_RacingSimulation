@@ -8,17 +8,12 @@ using UnityEngine;
 /// </summary>
 public struct OvertakingInfo
 {
-    public Transform opponentTransform;
     public Rigidbody opponentRb;
 
     public Vector3 milestone1;
     public Vector3 milestone2;
     public Vector3 milestone3;
     public Vector3 milestone4;
-
-    public Ghost overtakeGhost;
-    public Ghost potentialGoal;
-    public Ghost initialGoal;
 
     public Vector3 initialWaypoint; //keeps track of waypoint
 }
@@ -41,7 +36,7 @@ public class SM_OvertakingState : StateMachine
     private Vector3 currentGoalTarget;
 
     //Make is state machine global later to decision which car should be cautions 
-    private bool beCaution = true;
+    private bool beCaution = false;
 
     public SM_OvertakingState(DriverData driver, OvertakingInfo overtakingInfo) : base(driver)
     {
@@ -70,11 +65,6 @@ public class SM_OvertakingState : StateMachine
         sm_driver.steeringSensitivity = steeringSensitivity;
         sm_driver.visionLength = visionLength;
         sm_driver.visionAngle = visionAngle;
-
-        if(overtakingData.initialGoal == null)
-        {
-            Debug.Log("The initial goal is null");
-        }
 
         canDrive = true;
         base.Enter();
@@ -180,54 +170,7 @@ public class SM_OvertakingState : StateMachine
 
 
 
-    private bool UpdateGoalOld(ref Vector3 goal)
-    {
-        Vector3 forward = sm_driver.transform.TransformDirection(sm_driver.transform.forward);
 
-        if (overtakingData.initialGoal.obj)
-        {
-            Vector3 toOther = overtakingData.initialGoal.obj.transform.position - sm_driver.transform.position;
-            if (Vector3.Dot(forward, toOther) > 0)
-            {
-                goal = overtakingData.initialGoal.obj.transform.position;
-
-                //FOR DEBUGGING PURPOSES
-                //sm_driver.currentTargetInfo = overtakingData.initialGoal.obj.transform;
-                return true;
-            }
-        }
-
-        if (overtakingData.potentialGoal.obj)
-        {
-            Vector3 toOther = overtakingData.potentialGoal.obj.transform.position - sm_driver.transform.position;
-            if (Vector3.Dot(forward, toOther) > 0)
-            {
-                goal = overtakingData.potentialGoal.obj.transform.position;
-
-                //FOR DEBUGGING PURPOSES
-                //sm_driver.currentTargetInfo = overtakingData.potentialGoal.obj.transform;
-                return true;
-            }
-        }
-
-        if (overtakingData.overtakeGhost.obj)
-        {
-            Vector3 toOther = overtakingData.overtakeGhost.obj.transform.position - sm_driver.transform.position;
-            if (Vector3.Dot(forward, toOther) > 0)
-            {
-                goal = overtakingData.overtakeGhost.obj.transform.position;
-
-
-                //FOR DEBUGGING PURPOSES
-                //sm_driver.currentTargetInfo = overtakingData.overtakeGhost.obj.transform;
-                return true;
-            }
-        }
-
- 
-
-        return false;
-    }
 
 
     private bool UpdateGoal(ref Vector3 goal)

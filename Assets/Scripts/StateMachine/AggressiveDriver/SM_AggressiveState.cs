@@ -50,14 +50,14 @@ public class SM_AggressiveState : StateMachine
 
         //obstacleAhead = obstacleAvoidance.DangerAhead(visionLength, visionAngle);
         //Should ignore steering towards target if obstacle ahead
-        if (!sm_driver.obstacleAvoidance.DangerAhead(visionLength, visionAngle))
+        if (!obstacleAvoidance.DangerAhead(visionLength, visionAngle))
         {
             //steer based on the difference to target angle and use sensitivity.
             steer = Mathf.Clamp(targetAngle * steeringSensitivity, -1, 1) * Mathf.Sign(sm_driver.rb.velocity.magnitude);
             //float steer = 0.0f;
         }
 
-        sm_driver.obstacleAvoidance.Perception(visionLength, visionAngle, steeringSensitivity * 100f, ref steer);
+        obstacleAvoidance.Perception(visionLength, visionAngle, steeringSensitivity * 100f, ref steer);
         //print("steer value: " + steer);
 
 
@@ -73,7 +73,7 @@ public class SM_AggressiveState : StateMachine
             brake = 1.0f;
         }
 
-        sm_driver.obstacleAvoidance.Braking(ref brake, visionLength, visionAngle, 0.5f);
+        obstacleAvoidance.Braking(ref brake, visionLength, visionAngle, 0.5f);
         //brake = 1.0f;
         sm_driver.engine.Move(accelerate, brake, steer);
 

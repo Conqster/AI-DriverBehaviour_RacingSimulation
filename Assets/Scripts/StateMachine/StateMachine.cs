@@ -1,62 +1,66 @@
-using Car;
-using System.ComponentModel;
-using Unity.VisualScripting;
 using UnityEngine;
+using CarAI.Vehicle;
+using CarAI.FuzzySystem;
+using CarAI.ObstacleSystem;
+using CarAI.Pathfinding;
 using static StateMachine;
 
 
 [System.Serializable]
 public class DriverData
 {
-    public CarEngine engine;
+    [Header("Properties")]
     public Circuit circuit;
+    public Transform transform;
     public Rigidbody rb;
-    public ObstacleAvoidance obstacleAvoidance;
+    public DriverStateInformation stateInfo;
+    public WhiskeySearchType behindRayType = WhiskeySearchType.CentralRayWithWhiskey;
 
-    public int currentWaypointIndex = 0;
 
+    [Header("Car")]
+    public CarEngine engine;
     [SerializeField] private float maxTorque = 200f;
     [SerializeField] private float maxBreak = 897f;
-
-    public Transform transform;
-    public Material mat;
-    public bool canUseBlock;
-    public float blockingCooldown = 0.0f;
-
     [SerializeField, Range(0.0f, 1.0f)] public float steeringSensitivity = 0.01f;
+
+    [Header("Perception")]
     [SerializeField, Range(0.0f, 20.0f)] public float visionLength = 9.0f;
     [SerializeField, Range(0.0f, 90.0f)] public float visionAngle = 25.0f;
-
-    [Header("External Information")]
-    [SerializeField] public bool start = false;
-    [SerializeField] public bool goBerserk = false;
-    [SerializeField] public bool testState = false;
     [SerializeField, Range(0.0f, 5.0f)] public float raycastUpOffset = 1.0f;
     [SerializeField, Range(0.0f, 25.0f)] public float rayLength = 15.0f;
-    public Vector3 currentTarget;
+
+    [Header("Utilities Condition")]
+    [SerializeField] public bool canUseBlock;
+    [SerializeField] public bool start = false;
+    public float blockingCooldown = 0.0f;
+    public float overtakeCooldown = 5.0f;   
+    public bool goBerserk = false;
+
+
+
+    [Header("External Information")]
+    [SerializeField] public FuzzinessUtilityData currentFuzzinessUtilityData;   //if having another create a sturct then split in Driver Data
+    [SerializeField] public int currentWaypointIndex = 0;
     public Transform currentWaypoint = null;
-    public WhiskeySearchType behindRayType = WhiskeySearchType.CentralRayWithWhiskey;
     public SpeedAdjust speedAdjust = SpeedAdjust.BrakeHard;
-    public FuzzinessUtilityData currentFuzzinessUtilityData;   //if having another create a sturct then split in Driver Data
+    public Vector3 currentTarget;
 
     [Header("Debugger")]
-    [SerializeField] public float targetAngle;
     [SerializeField] public float currentIntensity;
     [SerializeField] public float rotRatio;
     [SerializeField] public float currentDirection;
     [SerializeField] public float currentSteer;
     [SerializeField] public float normalSteerIntensity;
-    public float brakeTest;
+    [SerializeField] public float brakeTest;
 
 
-    public DriverData(CarEngine engine, Circuit circuit, Rigidbody rb, ObstacleAvoidance obstacleAvoidance, Transform transform, FuzzinessUtilityData fuzzinessUtilityData)
+    public DriverData(CarEngine engine, DriverStateInformation driverStateInfo, Circuit circuit, Rigidbody rb,Transform transform)
     {
         this.engine = engine;
         this.circuit = circuit;
         this.rb = rb;
-        this.obstacleAvoidance = obstacleAvoidance;   //TO-DO: take out later, put into statemachine then retrieve and set through transform.getcom
         this.transform = transform;
-        currentFuzzinessUtilityData = fuzzinessUtilityData;   
+        stateInfo = driverStateInfo;    
     }
 }
 
@@ -125,6 +129,8 @@ public class StateMachine
     private CarGrounded carGrounded;
     protected bool canDrive = false;
 
+    protected ObstacleAvoidance obstacleAvoidance;
+
     public StateMachine(DriverData driver)
     {
         sm_name = "Base State";
@@ -135,6 +141,7 @@ public class StateMachine
         fuzzyUtilityCollection = sm_driver.transform.GetComponent<FuzzinessUtilityDataCollection>();
         driverSpeedFuzzy = driver.transform.GetComponent<DriverSpeedFuzzy>();
         carGrounded = driver.transform.GetComponent<CarGrounded>();
+        obstacleAvoidance = driver.transform.GetComponent<ObstacleAvoidance>();
     }
     
     
@@ -251,12 +258,11 @@ public class StateMachine
         Vector3 localTarget = sm_driver.rb.transform.InverseTransformPoint(sm_driver.currentTarget);
         float distanceToTarget = Vector3.Distance(sm_driver.currentTarget, sm_driver.rb.transform.position);
         float targetAngle = Mathf.Atan2(localTarget.x, localTarget.z) * Mathf.Rad2Deg;
-        sm_driver.targetAngle = targetAngle;     //debugs the target angle
 
 
         //obstacleAhead = obstacleAvoidance.DangerAhead(visionLength, visionAngle);
         //Should ignore steering towards target if obstacle ahead
-        if (sm_driver.obstacleAvoidance.DangerAhead(visionLength, visionAngle))
+        if (obstacleAvoidance.DangerAhead(visionLength, visionAngle))
         {
             lastObtacleTime = 0.0f;
         }
@@ -272,13 +278,72 @@ public class StateMachine
             //float steer = 0.0f;
         }
 
-        if(sm_driver.obstacleAvoidance.VehicleSidePerception(out int targetSide, 5.0f, 20.0f))
+
+        //float lookDistance = 0.0f;
+
+        float maxAngle = 20.0f;
+        float minAngle = 4.0f;
+        
+        float lookAngle = maxAngle * 0.5f;
+        if(speedAllowance.min != 0 && speedAllowance.max != 0)
+        {
+            float speedRatio = Mathf.InverseLerp(speedAllowance.min, speedAllowance.max, sm_driver.rb.velocity.magnitude);
+            lookAngle = Mathf.Lerp(minAngle,maxAngle, speedRatio);  
+        }
+
+
+        if(obstacleAvoidance.VehicleSidePerception(out int targetSide, out Rigidbody opponent, 7.0f, lookAngle))
         {
             //opposite side of target side hence (-targetSide) //hmm if 0;
-            steer += -targetSide * (sm_driver.steeringSensitivity * 100.0f);
+            //steer += -targetSide * (sm_driver.steeringSensitivity * 100.0f);
+
+            float possibleCornerAngle = CustomMath.NextThreePointIsAPossibleCorner(sm_driver.circuit.waypoints, (sm_driver.currentWaypointIndex + 1));
+            float maxCornerAngle = 20.0f;
+
+            int cornerIndex = (sm_driver.currentWaypointIndex + 1) % sm_driver.circuit.waypoints.Count;
+            float distanceToCorner = Vector3.Distance(sm_driver.transform.position, sm_driver.circuit.waypoints[cornerIndex].position);
+            float maxDistance = 2.0f;
+
+            if(possibleCornerAngle > maxCornerAngle && distanceToCorner > maxDistance)
+            {
+                if (opponent != null)
+                {
+                    Vector3 vecToOpponent = (opponent.position - sm_driver.transform.position).normalized;
+
+                    float dot = Vector3.Dot(vecToOpponent, sm_driver.transform.forward);
+                    float angle = (Mathf.Acos(dot / vecToOpponent.magnitude * sm_driver.transform.forward.magnitude)) * Mathf.Rad2Deg;
+
+                    float smallAngle = 4.0f;
+                    float bigAngle = 20.0f;
 
 
-            lastObtacleTime = 0.0f;
+                    float angleRatio = Mathf.InverseLerp(smallAngle, bigAngle, angle);
+                    Debug.Log("Current Angle: " + angle + ", Ratio would be: " + angleRatio);
+
+
+                    if (angle < 10)
+                        brake = 1.0f;
+
+                    if (angle < bigAngle)
+                    {
+
+                        steer += -targetSide * (sm_driver.steeringSensitivity * 100.0f); steer += -targetSide * (sm_driver.steeringSensitivity * 100.0f);
+                        steer = steer * (angleRatio);
+                    }
+
+
+                }
+
+
+                lastObtacleTime = 0.0f;
+            }
+            else
+            {
+                //use brake instead 
+                sm_driver.engine.Move(accelerate, 1.0f, steer);
+            }
+
+
         }
         else
         {
@@ -289,9 +354,9 @@ public class StateMachine
         }
         sm_driver.normalSteerIntensity = currentSteerSensitity;
 
-        sm_driver.obstacleAvoidance.Perception(visionLength, visionAngle, sm_driver.steeringSensitivity * 100f, ref steer);
+        obstacleAvoidance.Perception(visionLength, visionAngle, sm_driver.steeringSensitivity * 100f, ref steer);
 
-        sm_driver.obstacleAvoidance.Braking(ref brake, visionLength, visionAngle, 0.5f);
+        obstacleAvoidance.Braking(ref brake, visionLength, visionAngle, 0.5f);
 
     }
 
@@ -313,7 +378,9 @@ public class StateMachine
         {
             float distanceToTarget = Vector3.Distance(sm_driver.currentWaypoint.position, sm_driver.rb.transform.position);
 
-            if (distanceToTarget < 15.0f)
+            float minDistance = 20.0f; //MIGTH CHANGE WAS 15.0F
+
+            if (distanceToTarget < minDistance)
             {
                 sm_driver.currentWaypointIndex++;
                 if (sm_driver.currentWaypointIndex >= sm_driver.circuit.waypoints.Count)
@@ -475,6 +542,8 @@ public class StateMachine
 
 
         UpdateDistanceToCorner(ref currentDistance, checkFrom, directionToTarget);
+        Debug.Log("The new Distance: " +  currentDistance); 
+
         float currentSpeed = sm_driver.rb.velocity.magnitude;
 
         currentSpeed = Mathf.Clamp(currentSpeed, speedAllowance.min, speedAllowance.max);
@@ -521,13 +590,13 @@ public class StateMachine
 
     protected void UpdateDistanceToCorner(ref float useDistance, Vector3 start, Vector3 dir, bool debugRay = false)
     {
-
+        #region Old Method with Raycast
         RaycastHit hit;
 
-        if(Physics.Raycast(start, dir, out hit, Mathf.Infinity))
+        if (Physics.Raycast(start, dir, out hit, Mathf.Infinity))
         {
             Debug.DrawRay(start, dir * hit.distance, Color.green);
-            if(hit.transform.CompareTag("Wall"))
+            if (hit.transform.CompareTag("Wall"))
             {
                 useDistance = hit.distance;
                 if (debugRay)
@@ -535,7 +604,7 @@ public class StateMachine
                 return;
             }
 
-            if(hit.transform.CompareTag("Track"))
+            if (hit.transform.CompareTag("Track"))
             {
                 Vector3 incomingVec = hit.point - start;
                 Vector3 reflectVec = Vector3.Reflect(incomingVec, hit.normal);
@@ -543,10 +612,10 @@ public class StateMachine
                 float caputureDistance = hit.distance;
                 Debug.DrawRay(hit.point, reflectVec.normalized * hit.distance, Color.magenta);
 
-                if(debugRay)
+                if (debugRay)
                     Debug.DrawRay(hit.point, reflectVec.normalized * hit.distance, Color.red, 10.0f);
 
-                if(Physics.Raycast(hit.point, reflectVec.normalized, out hit, Mathf.Infinity))
+                if (Physics.Raycast(hit.point, reflectVec.normalized, out hit, Mathf.Infinity))
                 {
                     if (hit.transform.CompareTag("Wall"))
                     {
@@ -566,6 +635,71 @@ public class StateMachine
                 }
             }
         }
+        #endregion
+
+        #region New Method With NextThreeWayPoint
+
+        //float possibleCornerAngle = CustomMath.NextThreePointIsAPossibleCorner(sm_driver.circuit.waypoints, (sm_driver.currentWaypointIndex + 1));
+        //float maxCornerAngle = 10.0f;
+
+   
+
+        //if(possibleCornerAngle > maxCornerAngle)
+        //{
+        //    int cornerIndex = (sm_driver.currentWaypointIndex + 2) % sm_driver.circuit.waypoints.Count;
+        //    float distanceToCorner = Vector3.Distance(sm_driver.transform.position, sm_driver.circuit.waypoints[cornerIndex].position);
+
+        //    useDistance = distanceToCorner;
+        //}
+        //else
+        //{
+        //    RaycastHit hit;
+
+        //    if (Physics.Raycast(start, dir, out hit, Mathf.Infinity))
+        //    {
+        //        Debug.DrawRay(start, dir * hit.distance, Color.green);
+        //        if (hit.transform.CompareTag("Wall"))
+        //        {
+        //            useDistance = hit.distance;
+        //            if (debugRay)
+        //                Debug.DrawRay(start, dir * hit.distance, Color.magenta, 10.0f);
+        //            return;
+        //        }
+
+        //        if (hit.transform.CompareTag("Track"))
+        //        {
+        //            Vector3 incomingVec = hit.point - start;
+        //            Vector3 reflectVec = Vector3.Reflect(incomingVec, hit.normal);
+
+        //            float caputureDistance = hit.distance;
+        //            Debug.DrawRay(hit.point, reflectVec.normalized * hit.distance, Color.magenta);
+
+        //            if (debugRay)
+        //                Debug.DrawRay(hit.point, reflectVec.normalized * hit.distance, Color.red, 10.0f);
+
+        //            if (Physics.Raycast(hit.point, reflectVec.normalized, out hit, Mathf.Infinity))
+        //            {
+        //                if (hit.transform.CompareTag("Wall"))
+        //                {
+        //                    useDistance = Vector3.Distance(sm_driver.transform.position, hit.point);
+        //                    return;
+        //                }
+        //                else
+        //                {
+        //                    useDistance = caputureDistance * 2.0f;
+        //                    return;
+        //                }
+        //            }
+        //            else
+        //            {
+        //                useDistance = caputureDistance * 2.0f;
+        //                return;
+        //            }
+        //        }
+        //    }
+        //}
+        
+        #endregion
 
     }
 }
