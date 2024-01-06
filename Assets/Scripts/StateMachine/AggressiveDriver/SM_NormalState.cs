@@ -299,6 +299,9 @@ public class SM_NormalState : StateMachine
             if (sm_driver.rb.velocity.magnitude < overtakeOpponent.velocity.magnitude)
                 return false;
 
+            if (overtakeOpponent == sm_driver.rb)
+                return false;
+
             //dominant side 
             Vector3 opponentCenterMass = overtakeTarget.transform.position + (Vector3.up * 0.5f);
 
