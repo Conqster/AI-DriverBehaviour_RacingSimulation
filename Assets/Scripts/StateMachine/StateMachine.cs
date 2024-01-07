@@ -302,7 +302,7 @@ public class StateMachine
 
             int cornerIndex = (sm_driver.currentWaypointIndex + 1) % sm_driver.circuit.waypoints.Count;
             float distanceToCorner = Vector3.Distance(sm_driver.transform.position, sm_driver.circuit.waypoints[cornerIndex].position);
-            float maxDistance = 2.0f;
+            float maxDistance = 10.0f;   //2.0f
 
             if(possibleCornerAngle > maxCornerAngle && distanceToCorner > maxDistance)
             {
@@ -313,8 +313,8 @@ public class StateMachine
                     float dot = Vector3.Dot(vecToOpponent, sm_driver.transform.forward);
                     float angle = (Mathf.Acos(dot / vecToOpponent.magnitude * sm_driver.transform.forward.magnitude)) * Mathf.Rad2Deg;
 
-                    float smallAngle = 4.0f;
-                    float bigAngle = 20.0f;
+                    float smallAngle = 8.0f; //4
+                    float bigAngle = 25.0f; //20
 
 
                     float angleRatio = Mathf.InverseLerp(smallAngle, bigAngle, angle);
@@ -324,14 +324,16 @@ public class StateMachine
                     if (angle < 10)
                         brake = 1.0f;
 
+                    steer += -targetSide * (sm_driver.steeringSensitivity * 100.0f);
+                    steer = steer * (1 - angleRatio);
                     if (angle < bigAngle)
                     {
-
-                        steer += -targetSide * (sm_driver.steeringSensitivity * 100.0f); steer += -targetSide * (sm_driver.steeringSensitivity * 100.0f);
-                        steer = steer * (angleRatio);
+                        brake = 1.0f;   
+                        //steer += -targetSide * (sm_driver.steeringSensitivity * 100.0f);
+                        //steer = steer * (angleRatio);
                     }
 
-
+                    sm_driver.engine.Move(accelerate, brake, steer);
                 }
 
 
@@ -376,18 +378,15 @@ public class StateMachine
 
         if(sm_driver.currentWaypoint)
         {
-            float distanceToTarget = Vector3.Distance(sm_driver.currentWaypoint.position, sm_driver.rb.transform.position);
+            float distanceToWaypointNode = Vector3.Distance(sm_driver.currentWaypoint.position, sm_driver.rb.transform.position);
 
-            float minDistance = 20.0f; //MIGTH CHANGE WAS 15.0F
+            float distanceThreshold = 20.0f; //MIGTH CHANGE WAS 15.0F
 
-            if (distanceToTarget < minDistance)
+            if (distanceToWaypointNode < distanceThreshold)
             {
-                sm_driver.currentWaypointIndex++;
-                if (sm_driver.currentWaypointIndex >= sm_driver.circuit.waypoints.Count)
-                    sm_driver.currentWaypointIndex = 0;
+                sm_driver.currentWaypointIndex = (sm_driver.currentWaypointIndex + 1) % sm_driver.circuit.waypoints.Count;
 
                 sm_driver.currentWaypoint = sm_driver.circuit.waypoints[sm_driver.currentWaypointIndex];
-                //sm_driver.currentWaypointIndex = sm_driver.currentWaypointIndex; //debug info
             }
         }
         else

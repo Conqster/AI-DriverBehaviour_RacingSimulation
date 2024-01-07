@@ -137,7 +137,7 @@ namespace CarAI.Vehicle
                 }
             }
 
-            running = (acceleration != 0 || brake != 0 || steer != 0);
+            running = (acceleration != 0 || brake != 0);
 
         }
 

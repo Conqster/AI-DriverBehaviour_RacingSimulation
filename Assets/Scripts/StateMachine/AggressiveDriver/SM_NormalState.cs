@@ -374,7 +374,7 @@ public class SM_NormalState : StateMachine
             //REGISTER CURRENT WAYPOINT IN OVERTAKINGDATA
             info.initialWaypoint = sm_driver.currentWaypoint.position;
 
-            info.milestone1 = overtakeMilestone1;
+            info.milestone1 = overtakeMilestone1; // first node
             float intervalsBtwMilestones = 10.0f;
             //info.milestone2 = overtakeMilestone1 + (opponent.transform.transform.forward * intervalsBtwMilestones);
             //info.milestone3 = overtakeMilestone1 + ((opponent.transform.transform.forward * intervalsBtwMilestones) * 2.0f);

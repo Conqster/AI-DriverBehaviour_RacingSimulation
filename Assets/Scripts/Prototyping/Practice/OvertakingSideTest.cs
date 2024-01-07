@@ -18,6 +18,9 @@ public class OvertakingSideTest : MonoBehaviour
     public bool performCheck2 = false;
     public int whatSide;
 
+    [Space]
+    public CarAI.ObstacleSystem.WhiskeySearchType searchType = CarAI.ObstacleSystem.WhiskeySearchType.SingleOnly;
+
     private void Update()
     {
         if (performCheck)
@@ -25,6 +28,8 @@ public class OvertakingSideTest : MonoBehaviour
 
         if (performCheck2)
             whatSide = CheckSideToOpponent(opponent);
+
+        DoRayCast();    
     }
 
 
@@ -64,6 +69,55 @@ public class OvertakingSideTest : MonoBehaviour
         side = Vector3.Dot(opponentRight, vecToOppenent);
 
         return (side > 0) ? -1 : 1;
+    }
+
+
+
+    private void DoRayCast()
+    {
+
+        Vector3 origin = Vector3.zero;
+        Vector3 mid = transform.forward;
+
+        
+
+        float angle = 20.0f;
+        float length = 15.0f;
+
+        Vector3 leftPoint = Vector3.zero;
+        Vector3 rightPoint = Vector3.zero;
+
+
+        switch(searchType)
+        {
+            case CarAI.ObstacleSystem.WhiskeySearchType.CentralWithParallel:
+                origin = transform.position;
+                leftPoint = transform.position - transform.right * 2.0f;
+                rightPoint = transform.position + transform.right * 2.0f;
+
+                Debug.DrawRay(origin, transform.forward * length, Color.yellow);
+                Debug.DrawRay(leftPoint, transform.forward * length, Color.green);
+                Debug.DrawRay(rightPoint, transform.forward * length, Color.green);
+
+                break;
+            case CarAI.ObstacleSystem.WhiskeySearchType.CentralRayWithWhiskey:
+                origin = transform.position;
+                rightPoint = (Quaternion.Euler(0, angle, 0) * transform.forward);
+                leftPoint = (Quaternion.Euler(0, -angle, 0) * transform.forward);
+
+
+                Debug.DrawRay(origin, transform.forward * length, Color.yellow);
+                Debug.DrawRay(origin, rightPoint * length, Color.green);
+                Debug.DrawRay(origin, leftPoint * length, Color.green);
+
+                break;
+            case CarAI.ObstacleSystem.WhiskeySearchType.SingleOnly:
+                origin = transform.position;
+                Debug.DrawRay(origin, transform.forward * length, Color.yellow);
+                break;
+        }
+
+
     }
 
 }

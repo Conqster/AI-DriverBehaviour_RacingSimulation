@@ -222,7 +222,7 @@ Transform:
   m_GameObject: {fileID: 16886795}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 102.13, y: 1.36, z: 110.73}
+  m_LocalPosition: {x: 79.74, y: 1.36, z: 110.73}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1030,7 +1030,7 @@ MonoBehaviour:
   numOfPoints: 3
   lengthBtwNodes: 8
   generate: 0
-  currentWaypointIndex: 0
+  currentWaypointIndex: 1
   circuit: {fileID: 823970945}
   dotProduct: 0
   message: 
@@ -1194,6 +1194,9 @@ MonoBehaviour:
   dot: 0
   dot2: 0
   angle: 0
+  performCheck2: 0
+  whatSide: 0
+  searchType: 0
 --- !u!65 &292694455
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -1274,7 +1277,7 @@ Transform:
   m_GameObject: {fileID: 292694453}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 98.3, y: 1.36, z: 100.59}
+  m_LocalPosition: {x: 102.19, y: 1.36, z: 99.43}
   m_LocalScale: {x: 2.0797, y: 1, z: 4.8668}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4299,7 +4302,7 @@ Transform:
   m_GameObject: {fileID: 1417861445}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 98.3, y: 1.36, z: 108.300446}
+  m_LocalPosition: {x: 75.91, y: 1.36, z: 108.300446}
   m_LocalScale: {x: 2.0797, y: 1, z: 4.8668}
   m_ConstrainProportionsScale: 0
   m_Children: []
