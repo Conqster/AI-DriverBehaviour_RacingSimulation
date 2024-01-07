@@ -21,7 +21,7 @@ MonoBehaviour:
     coolDown1: 0
   NormalStateData:
     steeringSensitivity: 0.01
-    visionLength: 9
+    visionLength: 12
     visionAngle: 25
     startRaceIn: 0
     specialUtilityMeter: 0

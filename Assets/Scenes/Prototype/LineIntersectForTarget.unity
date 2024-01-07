@@ -1027,10 +1027,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   startPoint: {fileID: 781996517}
-  numOfPoints: 23
+  numOfPoints: 3
   lengthBtwNodes: 8
   generate: 0
-  currentWaypointIndex: 1
+  currentWaypointIndex: 0
   circuit: {fileID: 823970945}
   dotProduct: 0
   message: 

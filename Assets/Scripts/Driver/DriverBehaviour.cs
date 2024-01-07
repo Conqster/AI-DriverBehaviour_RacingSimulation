@@ -29,22 +29,25 @@ public class DriverBehaviour : MonoBehaviour
         circuit = GameObject.FindGameObjectWithTag("Circuit").GetComponent<Circuit>();
         rb = GetComponent<Rigidbody>();
         driverData = new DriverData(engine, driverStateInfo, circuit, rb, transform);
-        driverData.canUseBlock = canBlock;  
+        driverData.canUseBlock = canBlock;
         driverSM = new SM_DefaultState(driverData);
     }
 
-    private void FixedUpdate()
+    //private void FixedUpdate()
+    //{
+    //    //OldScript();
+    //    driverSM = driverSM.Process();
+    //    driverSMData = driverSM.GetStateMachineData();
+    //    //Time.timeScale = 0.5f;
+    //}
+
+
+
+    private void Update()
     {
         //OldScript();
         driverSM = driverSM.Process();
         driverSMData = driverSM.GetStateMachineData();
         //Time.timeScale = 0.5f;
     }
-
-
-
-
-
-
-
 }

@@ -35,6 +35,9 @@ public class SM_OvertakingState : StateMachine
 
     private Vector3 currentGoalTarget;
 
+    //TO-DO: A timer for how long to be in this state 
+    private float tooLong = 15.0f;
+
     //Make is state machine global later to decision which car should be cautions 
     private bool beCaution = false;
 
@@ -85,6 +88,10 @@ public class SM_OvertakingState : StateMachine
         {
             TriggerExit(new SM_NormalState(sm_driver));
         }
+
+
+        if (sm_duration > tooLong)
+            TriggerExit(new SM_NormalState(sm_driver));
 
 
         ObstacleAviodance(visionLength, visionAngle, steeringSensitivity, ref steer);

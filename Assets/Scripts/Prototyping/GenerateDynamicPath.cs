@@ -36,9 +36,8 @@ public class GenerateDynamicPath : MonoBehaviour
         //The Forward of each node is define by the point of the next point 
         Vector3 vecPointWayPoint = (mainPath[waypointIndex].position - point).normalized;
         Debug.DrawRay(point, vecPointWayPoint, Color.yellow);
-        int nextWayPointIndex = waypointIndex + 1;
-        if (nextWayPointIndex > mainPath.Count - 1)
-            nextWayPointIndex = 0;
+
+        int nextWayPointIndex = (waypointIndex + 1) % mainPath.Count;
 
         Vector3 vecWayPointForward = (mainPath[nextWayPointIndex].position - mainPath[waypointIndex].position).normalized;
         Debug.DrawRay(mainPath[waypointIndex].position, vecWayPointForward, Color.blue);
@@ -62,15 +61,14 @@ public class GenerateDynamicPath : MonoBehaviour
         for (int i = 0; i < points.Length - 1 ; i++) 
         {
             while (!PointIsBehind(points[i], currentIndex, mainPath))
-                currentIndex = (currentIndex + 1)% mainPath.Count;
+                currentIndex = (currentIndex + 1) % mainPath.Count;
 
 
             if (PointIsBehind(points[i], currentIndex, mainPath))
             {
                 //Bring out later
                 int nextWayPointIndex = (currentIndex + 1) % mainPath.Count;
-                if (nextWayPointIndex > mainPath.Count - 1)
-                    nextWayPointIndex = 0;
+
 
                 
                 Vector3 newVecWayPointForward = (mainPath[nextWayPointIndex].position - mainPath[currentIndex].position).normalized;

@@ -14,10 +14,17 @@ public class OvertakingSideTest : MonoBehaviour
 
     public float angle;
 
+    [Space]
+    public bool performCheck2 = false;
+    public int whatSide;
+
     private void Update()
     {
         if (performCheck)
             OvertakeCriteria();
+
+        if (performCheck2)
+            whatSide = CheckSideToOpponent(opponent);
     }
 
 
@@ -44,6 +51,19 @@ public class OvertakingSideTest : MonoBehaviour
         dot2 = Vector3.Dot(vecToOpponent, vecToOvertake);
 
         angle = (Mathf.Acos(dot/(vecToOpponent.magnitude * vecToOvertake.magnitude))) * Mathf.Rad2Deg;
+    }
+
+
+    private int CheckSideToOpponent(Transform opponent)
+    {
+        float side = 0;
+
+        Vector3 opponentRight = opponent.right;
+        Vector3 vecToOppenent = (opponent.position - transform.position).normalized;
+
+        side = Vector3.Dot(opponentRight, vecToOppenent);
+
+        return (side > 0) ? -1 : 1;
     }
 
 }

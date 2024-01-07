@@ -294,44 +294,51 @@ public class SM_NormalState : StateMachine
             //dominant side 
             Vector3 opponentCenterMass = opponent.transform.position + (Vector3.up * 0.5f);
 
-            RaycastHit leftSideHit, rightSideHit;
+            #region Old Check
+            //RaycastHit leftSideHit, rightSideHit;
 
-            bool dominantLeft = obstacleAvoidance.ObstacleDetection(opponentCenterMass, -opponent.transform.right, out leftSideHit, Mathf.Infinity, "Wall");
-            bool dominantRight = obstacleAvoidance.ObstacleDetection(opponentCenterMass, opponent.transform.right, out rightSideHit, Mathf.Infinity, "Wall");
+            //bool dominantLeft = obstacleAvoidance.ObstacleDetection(opponentCenterMass, -opponent.transform.right, out leftSideHit, Mathf.Infinity, "Wall");
+            //bool dominantRight = obstacleAvoidance.ObstacleDetection(opponentCenterMass, opponent.transform.right, out rightSideHit, Mathf.Infinity, "Wall");
 
-            int dominantSide = 0;
+            //int dominantSide = 0;
 
-            dominantSide = (dominantLeft) ? -1 : 0;
-            dominantSide = (dominantRight) ? 1 : 0;
+            //dominantSide = (dominantLeft) ? -1 : 0;
+            //dominantSide = (dominantRight) ? 1 : 0;
 
-            if (dominantLeft && dominantRight)
-            {
-                if (leftSideHit.distance > rightSideHit.distance)
-                    dominantSide = -1;
-                else
-                    dominantSide = 1;
-            }
-
-            #region old side check
-            //check my side to the opponent 
-            //Vector3 right = sm_driver.transform.TransformDirection(opponent.transform.right);
-            //Vector3 toOther = opponent.position - sm_driver.transform.position;
-
-            //Vector3 localTarget = sm_driver.transform.InverseTransformPoint(opponent.transform.position);
-            //float angle = Mathf.Atan2(localTarget.x, localTarget.z) * Mathf.Rad2Deg;
-
-            //int angleDirOpponentSide = (angle >  0) ? 1 : -1;
-
-            //if(angleDirOpponentSide == dominantSide)
+            //if (dominantLeft && dominantRight)
             //{
-            //    //meaning driver have to turn towards opponent to overtake
-            //    //which could be bad 
-
-            //    if(angle > 5.0f)  //should be able to make it under 20 degrees
-            //        return false;
-
-            //    //for now return later, perform a calcul;ation to repath a overatking
+            //    if (leftSideHit.distance > rightSideHit.distance)
+            //        dominantSide = -1;
+            //    else
+            //        dominantSide = 1;
             //}
+            #endregion
+
+            #region new t3est side check
+
+            float side = 0;
+            float dominantSide = 0;
+
+            Vector3 opponentRight = opponent.transform.right;
+            Vector3 vecToOppenent = (opponent.position - sm_driver.transform.position).normalized;
+
+            side = Vector3.Dot(opponentRight, vecToOppenent);
+
+            if (side < 0)
+                dominantSide = -1;
+            else
+                dominantSide = 1;
+
+            //check for room on the dominant side 
+            RaycastHit hit;
+            obstacleAvoidance.ObstacleDetection(opponentCenterMass, opponent.transform.right * dominantSide, out hit, Mathf.Infinity, "Wall");
+
+            //required space
+            float spaceNeed = 6.0f;
+
+            if (hit.distance < spaceNeed)
+                return false;
+
             #endregion
 
 
@@ -340,7 +347,7 @@ public class SM_NormalState : StateMachine
 
             //then i can overtake
             Vector3 overtakeMilestone1 = Vector3.zero;
-            float widthOf2Vehicle = 4.0f;
+            float widthOf2Vehicle = 3.5f;       //sometime it depends on what is the lateral distance of the two car OLD VALUE: 4.0f
             float lengthOfVechicle = 4.0f;
 
             overtakeMilestone1 = opponent.position + (opponent.transform.up * 0.5f)+
