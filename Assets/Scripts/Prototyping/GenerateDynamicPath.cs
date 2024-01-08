@@ -7,7 +7,7 @@ public class GenerateDynamicPath : MonoBehaviour
     [Header("Properties")]
     [SerializeField] private Transform startPoint;
     [SerializeField, Range(0, 50)] private int numOfPoints = 10;
-    [SerializeField, Range(0, 10)] private float lengthBtwNodes = 3.5f;
+    [SerializeField, Range(0, 20)] private float lengthBtwNodes = 3.5f;
     public bool generate = false;
 
 

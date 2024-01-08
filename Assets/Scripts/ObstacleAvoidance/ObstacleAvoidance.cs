@@ -70,7 +70,7 @@ namespace CarAI.ObstacleSystem
 
         public bool VehicleSidePerception(out int side, out Rigidbody opponent, float visionLength, float visionAngle)
         {
-            side = 0;
+            side = 1;
             opponent = null;
 
             if (carRear == null)

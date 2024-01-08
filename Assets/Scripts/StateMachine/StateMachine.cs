@@ -281,8 +281,8 @@ public class StateMachine
 
         //float lookDistance = 0.0f;
 
-        float maxAngle = 20.0f;
-        float minAngle = 4.0f;
+        float maxAngle = 25.0f; //20
+        float minAngle = 8.0f;  //4
         
         float lookAngle = maxAngle * 0.5f;
         if(speedAllowance.min != 0 && speedAllowance.max != 0)
@@ -291,8 +291,8 @@ public class StateMachine
             lookAngle = Mathf.Lerp(minAngle,maxAngle, speedRatio);  
         }
 
-
-        if(obstacleAvoidance.VehicleSidePerception(out int targetSide, out Rigidbody opponent, 7.0f, lookAngle))
+        //                                                                                      7
+        if(obstacleAvoidance.VehicleSidePerception(out int targetSide, out Rigidbody opponent, 10.0f, lookAngle))
         {
             //opposite side of target side hence (-targetSide) //hmm if 0;
             //steer += -targetSide * (sm_driver.steeringSensitivity * 100.0f);
@@ -313,7 +313,7 @@ public class StateMachine
                     float dot = Vector3.Dot(vecToOpponent, sm_driver.transform.forward);
                     float angle = (Mathf.Acos(dot / vecToOpponent.magnitude * sm_driver.transform.forward.magnitude)) * Mathf.Rad2Deg;
 
-                    float smallAngle = 8.0f; //4
+                    float smallAngle = 4.0f; //4
                     float bigAngle = 25.0f; //20
 
 
@@ -325,7 +325,8 @@ public class StateMachine
                         brake = 1.0f;
 
                     steer += -targetSide * (sm_driver.steeringSensitivity * 100.0f);
-                    steer = steer * (1 - angleRatio);
+                    //steer = steer * (angleRatio + 0.1f);
+                    steer = steer * (1 - angleRatio) + 0.1f;
                     if (angle < bigAngle)
                     {
                         brake = 1.0f;   
@@ -333,7 +334,7 @@ public class StateMachine
                         //steer = steer * (angleRatio);
                     }
 
-                    sm_driver.engine.Move(accelerate, brake, steer);
+                    sm_driver.engine.Move(accelerate * 0.5f, brake, steer);
                 }
 
 
@@ -342,7 +343,7 @@ public class StateMachine
             else
             {
                 //use brake instead 
-                sm_driver.engine.Move(accelerate, 1.0f, steer);
+                sm_driver.engine.Move(0.0f, 1.0f, steer);
             }
 
 

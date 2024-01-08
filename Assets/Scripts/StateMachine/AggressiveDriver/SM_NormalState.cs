@@ -173,6 +173,11 @@ public class SM_NormalState : StateMachine
 
         if(overtakeTarget != null)
         {
+            float requiredSpeed = 40.0f;
+
+            if(sm_driver.rb.velocity.magnitude < requiredSpeed)
+                return false;
+
             //only overtake if my speed beats opponent
             if (sm_driver.rb.velocity.magnitude < overtakeOpponent.velocity.magnitude)
                 return false;
