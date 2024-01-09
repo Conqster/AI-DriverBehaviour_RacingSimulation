@@ -15,7 +15,6 @@ public class SM_NormalState : StateMachine
     private float lastObtacleTime = Mathf.Infinity;
     private float normalSteerIntensity = 0.01f;
 
-    private bool wantToOverTake = false;
     //because this would delay overtaking if possible at start f
 
     private Rigidbody overtakeOpponent;
@@ -30,10 +29,14 @@ public class SM_NormalState : StateMachine
     protected override void Enter()
     {
 
-        speedAllowance = fuzzyUtilityCollection.NS_SpeedAllowance;
-        distanceAllowance = fuzzyUtilityCollection.NS_DistanceAllowance;
+        if(fuzzyUtilityCollection != null)
+        {
+            speedAllowance = fuzzyUtilityCollection.NS_SpeedAllowance;
+            distanceAllowance = fuzzyUtilityCollection.NS_DistanceAllowance;
 
-        sm_driver.currentFuzzinessUtilityData = fuzzyUtilityCollection.NS_FuzzyUtilityData;
+            sm_driver.currentFuzzinessUtilityData = fuzzyUtilityCollection.NS_FuzzyUtilityData;
+        }
+
         
 
         sm_driver.steeringSensitivity = sm_driver.stateInfo.NS_Data.steeringSensitivity;

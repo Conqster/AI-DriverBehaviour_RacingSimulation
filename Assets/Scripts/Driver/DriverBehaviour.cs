@@ -33,21 +33,21 @@ public class DriverBehaviour : MonoBehaviour
         driverSM = new SM_DefaultState(driverData);
     }
 
-    //private void FixedUpdate()
-    //{
-    //    //OldScript();
-    //    driverSM = driverSM.Process();
-    //    driverSMData = driverSM.GetStateMachineData();
-    //    //Time.timeScale = 0.5f;
-    //}
-
-
-
-    private void Update()
+    private void FixedUpdate()
     {
         //OldScript();
         driverSM = driverSM.Process();
         driverSMData = driverSM.GetStateMachineData();
         //Time.timeScale = 0.5f;
     }
+
+
+
+    //private void Update()
+    //{
+    //    //OldScript();
+    //    driverSM = driverSM.Process();
+    //    driverSMData = driverSM.GetStateMachineData();
+    //    //Time.timeScale = 0.5f;
+    //}
 }

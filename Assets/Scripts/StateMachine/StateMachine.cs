@@ -130,6 +130,7 @@ public class StateMachine
     protected bool canDrive = false;
 
     protected ObstacleAvoidance obstacleAvoidance;
+    protected bool wantToOverTake = false;
 
     public StateMachine(DriverData driver)
     {
@@ -178,7 +179,10 @@ public class StateMachine
     {
         sm_duration = 0.0f;
 
-        useFuzzySystem = driverSpeedFuzzy.InitFuzzySystem(distanceAllowance, speedAllowance, sm_driver.currentFuzzinessUtilityData);
+        if(driverSpeedFuzzy != null)
+            useFuzzySystem = driverSpeedFuzzy.InitFuzzySystem(distanceAllowance, speedAllowance, sm_driver.currentFuzzinessUtilityData);
+
+        
         //after all logic as be performed change state event to update
         sm_event = SM_Event.Update;
     }
@@ -292,7 +296,7 @@ public class StateMachine
         }
 
         //                                                                                      7
-        if(obstacleAvoidance.VehicleSidePerception(out int targetSide, out Rigidbody opponent, 10.0f, lookAngle))
+        if(obstacleAvoidance.VehicleSidePerception(out int targetSide, out Rigidbody opponent, 8.0f, lookAngle))
         {
             //opposite side of target side hence (-targetSide) //hmm if 0;
             //steer += -targetSide * (sm_driver.steeringSensitivity * 100.0f);
@@ -304,7 +308,7 @@ public class StateMachine
             float distanceToCorner = Vector3.Distance(sm_driver.transform.position, sm_driver.circuit.waypoints[cornerIndex].position);
             float maxDistance = 10.0f;   //2.0f
 
-            if(possibleCornerAngle > maxCornerAngle && distanceToCorner > maxDistance)
+            if(possibleCornerAngle > maxCornerAngle && distanceToCorner > maxDistance && !wantToOverTake)
             {
                 if (opponent != null)
                 {

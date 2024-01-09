@@ -90,7 +90,7 @@ namespace CarAI.ObstacleSystem
                 bool leftWhisker = ObstacleDetection(carRear.position, leftPoint, out hit, visionLength, "Vehicle");
                 bool rightWhisker = ObstacleDetection(carRear.position, rightPoint, out hit, visionLength, "Vehicle");
 
-                Debug.DrawRay(carRear.position, transform.forward * (visionLength * 1.5f), (midVision) ? Color.red : Color.cyan);
+                Debug.DrawRay(carRear.position, transform.forward * (visionLength * 1.2f), (midVision) ? Color.red : Color.cyan);
                 Debug.DrawRay(carRear.position, leftPoint * visionLength, (leftWhisker) ? Color.red : Color.blue);
                 Debug.DrawRay(carRear.position, rightPoint * visionLength, (rightWhisker) ? Color.red : Color.blue);
             }
@@ -98,7 +98,7 @@ namespace CarAI.ObstacleSystem
 
             if (ObstacleDetection(carRear.position, transform.forward, out hit, visionLength * 1.5f, "Vehicle"))
             {
-                side = SweepCheck(visionLength * 1.5f, visionAngle);
+                side = SweepCheck(visionLength * 1.2f, visionAngle);
                 opponent = hit.rigidbody;
                 return true;
             }
