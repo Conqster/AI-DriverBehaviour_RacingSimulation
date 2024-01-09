@@ -11,6 +11,7 @@ TagManager:
   - Wall
   - Track
   - CarRear
+  - DriverCamera
   layers:
   - Default
   - TransparentFX

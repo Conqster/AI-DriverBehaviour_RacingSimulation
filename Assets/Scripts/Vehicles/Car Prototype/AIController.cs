@@ -42,7 +42,7 @@ public class AIController : MonoBehaviour
 
         if(Input.GetKeyDown(KeyCode.P)) slowTime = !slowTime;
 
-        Time.timeScale = (slowTime)? 0.5f : 1.0f;   
+        //Time.timeScale = (slowTime)? 0.5f : 1.0f;   
         
 
 

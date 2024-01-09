@@ -31,7 +31,7 @@ public class DriverData
 
     [Header("Utilities Condition")]
     [SerializeField] public bool canUseBlock;
-    [SerializeField] public bool start = false;
+    [SerializeField] public bool canStartRace = false;
     public float blockingCooldown = 0.0f;
     public float overtakeCooldown = 5.0f;   
     public bool goBerserk = false;

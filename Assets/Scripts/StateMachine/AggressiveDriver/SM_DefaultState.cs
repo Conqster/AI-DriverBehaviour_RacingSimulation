@@ -1,9 +1,13 @@
 
 
+using UnityEngine;
+
 public class SM_DefaultState : StateMachine
 {
     private bool startRace = false;
     private float startRaceIn = 3.0f;
+
+    private float startEngine = 0.0f;
 
     public SM_DefaultState(DriverData driver) : base(driver)
     {
@@ -22,12 +26,16 @@ public class SM_DefaultState : StateMachine
 
     protected override void Update()
     {
-        startRace = sm_driver.start;
+        startRace = sm_driver.canStartRace;
 
-        if(sm_duration > startRaceIn) 
-            startRace = true;
+        //if(sm_duration > startRaceIn) 
+        //    startRace = true;
 
-        if(startRace)
+        if (startRace)
+            startEngine += Time.deltaTime;
+
+
+        if(startEngine > startRaceIn)
         {
             TriggerExit(new SM_NormalState(sm_driver));
         }

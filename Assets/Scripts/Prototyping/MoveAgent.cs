@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 using TMPro;
-using UnityEditor.Search;
 
 public class MoveAgent : MonoBehaviour
 {

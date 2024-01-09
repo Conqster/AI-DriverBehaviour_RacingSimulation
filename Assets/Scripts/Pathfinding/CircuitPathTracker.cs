@@ -142,13 +142,16 @@ public class CircuitPathTracker : MonoBehaviour
 
     private void DirectVisual()
     {
+#if UNITY_EDITOR
         UnityEditor.Handles.color = arrowColour;
         UnityEditor.Handles.ArrowHandleCap(0, transform.position, transform.rotation, 1.5f, EventType.Repaint);
+#endif
     }
 
 
     private void PathSize()
     {
+#if UNITY_EDITOR
         UnityEditor.Handles.color = pathWidthColour;
 
         Vector3 safeLeftPoint = transform.position - (transform.right * (pathHalfWidth * (1 - pathWidthDangerRatio)));
@@ -171,6 +174,7 @@ public class CircuitPathTracker : MonoBehaviour
         Vector3 rightSidePR = safeRightPoint + (transform.right * (pathHalfWidth * pathWidthDangerRatio));
 
         UnityEditor.Handles.DrawLine(rightSidePL, rightSidePR, drawWidthThickness);
+#endif
     }
 
 }
