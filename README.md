@@ -3,7 +3,7 @@
 
 ![alt text](/ReadMe_Images/UnityRaceView.png)
 
-<p align = "center>
+<p align = "center">
 <img src = "ReadMe_Images/UnityRaceView.png" alt = "Race View in Unity Editor" />
 </p> 
 
