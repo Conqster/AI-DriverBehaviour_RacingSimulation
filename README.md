@@ -1,5 +1,5 @@
 
-                                    #AI Driver Behaviour#
+<h1 align = "center">AI Driver Behaviour</h1>
 
 ![alt text](image-1.png)
 
