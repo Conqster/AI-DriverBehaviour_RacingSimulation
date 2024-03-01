@@ -25,3 +25,10 @@ The vehicle (Car system) is built upon the Unity Physics Wheel Collider, where t
 |Fuzzy Logic and Set  |For modelling drivers decision making for speed adjustment for a degree of trueness                                   |
 |Obstacles Avoidance  |For Driver perception and awareness of the play space and avoiding collisions                                         |
 |Pathfinding          |Traditional waypoints are placed across the play space and the use of vecvtor calculation. For keeping driver in track|
+
+
+Dyanmic Path overtaking
+
+ <p align = "center">
+    <img src = "ReadMe_Images/DynamicOvertake.gif"/>
+ </p>
