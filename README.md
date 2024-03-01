@@ -19,10 +19,9 @@ The vehicle (Car system) is built upon the Unity Physics Wheel Collider, where t
 
 <h2 align = "left">List of Features</h2>
 
-|Features             |Description                                   |
-|Finite State machine |Stores states and condition of Driver Behviour| 
-
-| Header1    | Header2    | Header3    |
-| :--------- | :--------: | ---------: |
-| Row1, Col1 | Row1, Col2 | Row1, Col3 |
-| Row2, Col1 | Row2, Col2 | Row2, Col3 |
+|Features             |Description                                                                                                           |
+|:--------------------|:---------------------------------------------------------------------------------------------------------------------|
+|Finite State machine |Stores states and condition of Driver Behaviour                                                                       | 
+|Fuzzy Logic and Set  |For modelling drivers decision making for speed adjustment for a degree of trueness                                   |
+|Obstacles Avoidance  |For Driver perception and awareness of the play space and avoiding collisions                                         |
+|Pathfinding          |Traditional waypoints are placed across the play space and the use of vecvtor calculation. For keeping driver in track|
