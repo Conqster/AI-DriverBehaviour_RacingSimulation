@@ -3,7 +3,9 @@
 
 ![alt text](/ReadMe_Images/UnityRaceView.png)
 
+<p align = "center>
 <img src = "ReadMe_Images/UnityRaceView.png" alt = "Race View in Unity Editor" />
+</p> 
 
 This project aims to create an AI-driven behaviour model for a racing simulation using Unity neglecting fully car dynamics. These would be achieved using Applied mathematics (majorly Vector calculation, mathematical functions) and AI techniques (revolving around decision making then pathfinding and Autonomous Agents) to model these systems.
 
